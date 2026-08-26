@@ -91,7 +91,7 @@ export default function LoginForm() {
       <div className="text-center space-y-3 pb-2">
         <Link
           href="/"
-          className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-transform hover:scale-105"
+          className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-lg shadow-orange-500/25 transition-transform hover:scale-105"
         >
           <svg
             className="h-7 w-7"

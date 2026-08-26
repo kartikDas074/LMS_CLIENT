@@ -19,6 +19,7 @@ export function AuthProvider({ children }) {
     try {
       const token = getStoredToken();
       if (!token) {
+        console.debug("[auth] Authentication restore skipped", { jwtExists: false });
         setUser(null);
         setIsLoading(false);
         return;
@@ -27,9 +28,16 @@ export function AuthProvider({ children }) {
       const userData = await fetchCurrentUser(token);
       setUser(userData);
     } catch (err) {
-      console.error("Failed to hydrate authenticated user:", err);
-      setUser(null);
-      clearStoredToken();
+      console.error("[auth] Authentication restore failed:", {
+        status: err.status,
+        authInvalid: err.authInvalid,
+        message: err.message,
+      });
+      if (err.authInvalid) {
+        setUser(null);
+        console.warn("[auth] Logout triggered: refresh token was rejected or expired.");
+        clearStoredToken();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +71,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    console.debug("[auth] Logout triggered: user action");
     clearStoredToken();
     setUser(null);
   };

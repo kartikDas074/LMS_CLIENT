@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { getDashboardUrl, normalizeRole } from "@/config/dashboardNavigation";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -12,7 +13,7 @@ const NAV_LINKS = [
 ];
 
 function getRoleBadge(role) {
-  const normalized = typeof role === "object" ? role?.type || role?.name : role;
+  const normalized = role;
   switch (normalized) {
     case "admin-pannel":
     case "admin":
@@ -39,7 +40,9 @@ export default function Navbar() {
     return pathname.startsWith(path);
   };
 
-  const roleBadge = getRoleBadge(user?.role);
+  const role = normalizeRole(user?.role);
+  const roleBadge = getRoleBadge(role);
+  const dashboardUrl = getDashboardUrl(user?.role);
   const avatarUrl = user?.image?.url;
 
   return (
@@ -50,7 +53,7 @@ export default function Navbar() {
           href="/"
           className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900 transition-opacity hover:opacity-90"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/20">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-sm shadow-orange-500/20">
             <svg
               className="h-5 w-5"
               fill="none"
@@ -66,8 +69,8 @@ export default function Navbar() {
               />
             </svg>
           </div>
-          <span className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 bg-clip-text text-slate-900">
-            Learn<span className="text-indigo-600">Hub</span>
+          <span className="text-slate-900">
+            Learn<span className="text-orange-400">Hub</span>
           </span>
         </Link>
 
@@ -95,6 +98,16 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
+              <Link
+                href={dashboardUrl}
+                className={`inline-flex items-center justify-center rounded-lg border px-3.5 py-2 text-xs font-semibold transition ${
+                  pathname.startsWith("/dashboard")
+                    ? "border-orange-500/50 bg-orange-500/10 text-orange-300"
+                    : "border-slate-200 bg-white text-slate-700 hover:border-orange-500/50 hover:text-orange-400"
+                }`}
+              >
+                Dashboard
+              </Link>
               <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 py-1.5 pl-2 pr-3">
                 <div className="relative h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">
                   {avatarUrl ? (
@@ -194,6 +207,14 @@ export default function Navbar() {
           <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2.5">
             {isAuthenticated ? (
               <div className="space-y-3">
+                <Link
+                  href={dashboardUrl}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex w-full items-center justify-between rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2.5 text-sm font-semibold text-orange-300 transition hover:bg-orange-500/20"
+                >
+                  Dashboard
+                  <span className="text-[10px] uppercase tracking-wider text-orange-400">{role}</span>
+                </Link>
                 <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
                   <div className="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700 overflow-hidden">
                     {avatarUrl ? (

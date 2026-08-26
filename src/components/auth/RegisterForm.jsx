@@ -147,7 +147,7 @@ export default function RegisterForm() {
       <div className="text-center space-y-3 pb-2">
         <Link
           href="/"
-          className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25 transition-transform hover:scale-105"
+          className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-lg shadow-orange-500/25 transition-transform hover:scale-105"
         >
           <svg
             className="h-7 w-7"
@@ -362,7 +362,7 @@ export default function RegisterForm() {
                     onClick={() => handleRoleSelect(roleOption.id)}
                     className={`relative flex items-start gap-2.5 rounded-xl border p-3 cursor-pointer transition ${
                       isSelected
-                        ? "border-indigo-500 bg-indigo-950/30 ring-1 ring-indigo-500/50"
+                        ? "border-orange-500 bg-orange-950/30 ring-1 ring-orange-500/50"
                         : "border-[#30363d] bg-[#0d1117] hover:border-[#8b949e] hover:bg-[#161b22]"
                     }`}
                   >
@@ -371,7 +371,7 @@ export default function RegisterForm() {
                       name="role_selection"
                       checked={isSelected}
                       onChange={() => handleRoleSelect(roleOption.id)}
-                      className="mt-0.5 h-3.5 w-3.5 text-indigo-500 border-[#30363d] bg-[#0d1117] accent-indigo-500"
+                      className="mt-0.5 h-3.5 w-3.5 text-orange-500 border-[#30363d] bg-[#0d1117] accent-orange-500"
                     />
                     <div className="text-xs">
                       <span className="font-semibold text-[#e6edf3] block">

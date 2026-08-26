@@ -13,7 +13,7 @@ export default function Footer() {
               href="/"
               className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-white"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-500 text-white shadow-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-sm shadow-orange-500/20">
                 <svg
                   className="h-5 w-5"
                   fill="none"
@@ -29,7 +29,7 @@ export default function Footer() {
                 </svg>
               </div>
               <span>
-                Learn<span className="text-indigo-400">Hub</span>
+                Learn<span className="text-orange-400">Hub</span>
               </span>
             </Link>
             <p className="max-w-md text-sm leading-relaxed text-slate-400">

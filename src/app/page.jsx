@@ -59,19 +59,19 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-indigo-50/50 via-white to-white py-16 sm:py-24">
+      <section className="relative overflow-hidden bg-[#050816] py-16 sm:py-24 before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_60%_35%,rgba(255,107,0,0.12),transparent_48%)] before:pointer-events-none">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200/80 bg-indigo-50/80 px-4 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs">
-                <span className="flex h-2 w-2 rounded-full bg-indigo-600 animate-pulse"></span>
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs font-semibold text-orange-300 shadow-2xs">
+                <span className="flex h-2 w-2 rounded-full bg-orange-400 animate-pulse"></span>
                 Empowering 50,000+ Students Worldwide
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15]">
                 Master In-Demand Skills with{" "}
-                <span className="bg-gradient-to-r from-indigo-600 via-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent">
                   World-Class Instructors
                 </span>
               </h1>
@@ -84,7 +84,7 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
                 <Link
                   href="/explore"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-orange-500"
                 >
                   Explore All Courses
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,7 +125,7 @@ export default function HomePage() {
 
             {/* Right Card / Visual */}
             <div className="lg:col-span-5 relative">
-              <div className="relative mx-auto max-w-md rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-6 text-white shadow-xl shadow-indigo-600/10">
+              <div className="relative mx-auto max-w-md rounded-2xl border border-orange-500/20 bg-surface-elevated bg-gradient-to-br from-orange-500/20 via-slate-900 to-slate-950 p-6 text-white shadow-xl shadow-orange-500/10">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b border-indigo-500/30 pb-4">
                     <div>
@@ -176,7 +176,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Counter Section */}
-      <section className="border-y border-slate-200/80 bg-white py-10">
+      <section className="border-y border-slate-200/80 bg-[#0B1120] py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-6 md:grid-cols-4 text-center">
             {STATS.map((stat, idx) => (
@@ -190,7 +190,7 @@ export default function HomePage() {
       </section>
 
       {/* Categories Grid */}
-      <section className="py-16 sm:py-20 bg-slate-50">
+      <section className="py-16 sm:py-20 bg-[#0B1120]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
             <div>
@@ -230,7 +230,7 @@ export default function HomePage() {
       </section>
 
       {/* Featured Courses */}
-      <section className="py-16 sm:py-20 bg-white">
+      <section className="py-16 sm:py-20 bg-[#050816]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
             <div>
@@ -299,7 +299,7 @@ export default function HomePage() {
       </section>
 
       {/* Call to Action Banner */}
-      <section className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-violet-700 py-16 text-white">
+      <section className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 py-16 text-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center space-y-6">
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Ready to Start Your Learning Journey?
