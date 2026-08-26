@@ -198,7 +198,7 @@ export async function fetchCurrentUser(token, allowRefresh = true) {
   return response.json();
 }
 
-async function refreshAccessToken() {
+export async function refreshAccessToken() {
   logAuth("Access token refresh started");
   try {
     const response = await fetch(`${API_BASE_URL}/auth/refresh`, {

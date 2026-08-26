@@ -12,6 +12,7 @@ export const dashboardNavigation = {
     { label: "Dashboard", href: "/dashboard/admin", icon: icon("grid") },
     { label: "User Management", href: "/dashboard/admin/users", icon: icon("users") },
     { label: "Course Management", href: "/dashboard/admin/courses", icon: icon("book") },
+    { label: "Add Course", href: "/dashboard/admin/courses/create", icon: icon("plus") },
     { label: "Lesson Management", href: "/dashboard/admin/lessons", icon: icon("play") },
     { label: "Quiz Management", href: "/dashboard/admin/quizzes", icon: icon("clipboard") },
     { label: "Create Quiz", href: "/dashboard/admin/quizzes/create", icon: icon("plus") },
@@ -19,6 +20,7 @@ export const dashboardNavigation = {
   ],
   "content-manager": [
     { label: "Course Management", href: "/dashboard/content-manager/courses", icon: icon("book") },
+    { label: "Add Course", href: "/dashboard/content-manager/courses/create", icon: icon("plus") },
     { label: "Lesson Management", href: "/dashboard/content-manager/lessons", icon: icon("play") },
     { label: "Quiz Management", href: "/dashboard/content-manager/quizzes", icon: icon("clipboard") },
     { label: "Create Quiz", href: "/dashboard/content-manager/quizzes/create", icon: icon("plus") },
@@ -26,6 +28,7 @@ export const dashboardNavigation = {
   ],
   instructor: [
     { label: "Course Management", href: "/dashboard/instructor/courses", icon: icon("book"), note: "My Courses" },
+    { label: "Add Course", href: "/dashboard/instructor/courses/create", icon: icon("plus") },
     { label: "Lesson Management", href: "/dashboard/instructor/lessons", icon: icon("play"), note: "My Lessons" },
     { label: "Quiz Management", href: "/dashboard/instructor/quizzes", icon: icon("clipboard"), note: "My Quizzes" },
     { label: "Create Quiz", href: "/dashboard/instructor/quizzes/create", icon: icon("plus") },
