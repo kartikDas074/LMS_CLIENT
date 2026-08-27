@@ -1,0 +1,2 @@
+import BlogDetails from "@/components/dashboard/BlogDetails";
+export default async function BlogDetailsPage({ params }) { const { documentId } = await params; return <BlogDetails documentId={documentId} />; }

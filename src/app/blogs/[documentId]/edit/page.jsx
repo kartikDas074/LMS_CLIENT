@@ -1,0 +1,2 @@
+import BlogForm from "@/components/dashboard/BlogForm";
+export default async function EditBlogPage({ params }) { const { documentId } = await params; return <BlogForm role="admin" documentId={documentId} />; }
