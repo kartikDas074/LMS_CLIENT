@@ -1,0 +1,2 @@
+import CourseDetails from "@/components/dashboard/CourseDetails";
+export default async function CourseDetailsPage({ params }) { const { documentId } = await params; return <CourseDetails documentId={documentId} />; }

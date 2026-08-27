@@ -1,0 +1,2 @@
+import AddCourseForm from "@/components/dashboard/AddCourseForm";
+export default async function EditCoursePage({ params }) { const { documentId } = await params; return <AddCourseForm role="admin" courseId={documentId} />; }

@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import Icon from "@/components/dashboard/Icon";
 import { Card, PageHeader } from "@/components/ui/DashboardUI";
-import { createCourse, COURSE_LEVELS } from "@/services/strapi/courses";
+import { createCourse, COURSE_LEVELS, getCourse, getCourseImageUrl, updateCourse } from "@/services/strapi/courses";
 
 const initialForm = {
   title: "",
@@ -29,7 +29,7 @@ function Field({ label, required, error, children, className = "" }) {
   );
 }
 
-function TagInput({ label, placeholder, items, onAdd, onRemove, error }) {
+function TagInput({ label, placeholder, items, onAdd, onRemove, onUpdate, error }) {
   const [value, setValue] = useState("");
 
   function addItem() {
@@ -53,14 +53,14 @@ function TagInput({ label, placeholder, items, onAdd, onRemove, error }) {
     <Field label={label} required error={error} className="sm:col-span-2">
       <div className="mt-1 rounded-xl border border-slate-800 bg-slate-950/40 p-3 focus-within:border-orange-500/60">
         {items.length > 0 && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {items.map((item) => (
-              <span key={item} className="inline-flex items-center gap-1.5 rounded-lg border border-orange-500/25 bg-orange-500/10 px-2.5 py-1.5 text-xs font-medium text-orange-200">
-                {item}
-                <button type="button" onClick={() => onRemove(item)} className="rounded p-0.5 text-orange-400 hover:bg-orange-500/20 hover:text-white" aria-label={`Remove ${item}`}>
+          <div className="mb-3 space-y-2">
+            {items.map((item, index) => (
+              <div key={`${item}-${index}`} className="flex gap-2">
+                <input value={item} onChange={(event) => onUpdate(index, event.target.value)} className={`${inputClass} mt-0 flex-1`} aria-label={`${label.slice(0, -1)} ${index + 1}`} />
+                <button type="button" onClick={() => onRemove(index)} className="rounded-lg border border-slate-700 px-3 text-orange-400 hover:bg-orange-500/20 hover:text-white" aria-label={`Remove ${label.slice(0, -1)} ${index + 1}`}>
                   <Icon name="plus" size={13} className="rotate-45" />
                 </button>
-              </span>
+              </div>
             ))}
           </div>
         )}
@@ -73,7 +73,7 @@ function TagInput({ label, placeholder, items, onAdd, onRemove, error }) {
   );
 }
 
-export default function AddCourseForm({ role }) {
+export default function AddCourseForm({ role, courseId }) {
   const { user: currentUser } = useAuth();
   const canCreate = role === "admin" || role === "content-manager";
   const [form, setForm] = useState(initialForm);
@@ -85,6 +85,25 @@ export default function AddCourseForm({ role }) {
   const [submitError, setSubmitError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingCourse, setIsLoadingCourse] = useState(Boolean(courseId));
+  const [existingThumbnailId, setExistingThumbnailId] = useState(null);
+  const [existingInstructorId, setExistingInstructorId] = useState(null);
+
+  useEffect(() => {
+    if (!courseId) return;
+    getCourse(courseId).then((response) => {
+      const course = response?.data || response;
+      setForm({ title: course.title || "", shortDescription: course.shortDescription || "", description: course.description || "", level: course.level || "", duration: course.duration ?? "", price: course.price ?? "", extraSupport: course.extraSupport || "" });
+      setTopics(Array.isArray(course.topic) ? course.topic : []);
+      setSkills(Array.isArray(course.skills) ? course.skills : []);
+      setPreview(getCourseImageUrl(course.thumbnail));
+      setExistingThumbnailId(Array.isArray(course.thumbnail) ? course.thumbnail[0]?.id : course.thumbnail?.id);
+      setExistingInstructorId(course.instructor?.id);
+    }).catch((error) => {
+      console.error("[courses] Failed to load course for editing", error);
+      setSubmitError("Unable to load this course. Please try again.");
+    }).finally(() => setIsLoadingCourse(false));
+  }, [courseId]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -108,10 +127,10 @@ export default function AddCourseForm({ role }) {
     if (!form.title.trim()) nextErrors.title = "Title is required.";
     if (!form.shortDescription.trim()) nextErrors.shortDescription = "Short description is required.";
     if (!form.description.trim()) nextErrors.description = "Description is required.";
-    if (!thumbnail) nextErrors.thumbnail = "A course thumbnail is required.";
+    if (!thumbnail && !courseId) nextErrors.thumbnail = "A course thumbnail is required.";
     if (!form.level) nextErrors.level = "Select a course level.";
-    if (topics.length === 0) nextErrors.topic = "Add at least one topic.";
-    if (skills.length === 0) nextErrors.skills = "Add at least one skill.";
+    if (topics.filter((item) => item.trim()).length === 0) nextErrors.topic = "Add at least one topic.";
+    if (skills.filter((item) => item.trim()).length === 0) nextErrors.skills = "Add at least one skill.";
     if (form.price === "" || Number.isNaN(Number(form.price)) || Number(form.price) < 0) {
       nextErrors.price = "Enter a non-negative price.";
     }
@@ -127,37 +146,53 @@ export default function AddCourseForm({ role }) {
     setSubmitError("");
     setSuccess("");
     if (!validate()) return;
-    if (!canCreate) {
+    if (!canCreate && !(courseId && role === "instructor")) {
       setSuccess("Your course form is ready. The logged-in Instructor will become the course owner when creation is enabled.");
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await createCourse(
-        { ...form, topic: topics, skills },
-        thumbnail,
-        { role, currentUser }
-      );
-      setForm(initialForm);
-      setTopics([]);
-      setSkills([]);
-      setThumbnail(null);
-      setPreview("");
-      setSuccess("Course created successfully.");
+      const cleanTopics = topics.map((item) => item.trim()).filter(Boolean);
+      const cleanSkills = skills.map((item) => item.trim()).filter(Boolean);
+      const cleanForm = {
+        title: form.title.trim(),
+        shortDescription: form.shortDescription.trim(),
+        description: form.description.trim(),
+        level: form.level,
+        duration: form.duration,
+        price: form.price,
+        extraSupport: form.extraSupport.trim(),
+        topic: cleanTopics,
+        skills: cleanSkills,
+      };
+      if (courseId) {
+        await updateCourse(courseId, cleanForm, existingThumbnailId, existingInstructorId);
+        setSuccess("Course updated successfully.");
+      } else {
+        await createCourse({ ...form, topic: topics, skills }, thumbnail, { role, currentUser });
+        setForm(initialForm);
+        setTopics([]);
+        setSkills([]);
+        setThumbnail(null);
+        setPreview("");
+        setSuccess("Course created successfully.");
+      }
     } catch (error) {
-      setSubmitError(error.message || "Unable to create course. Please try again.");
+      setSubmitError(error.status === 400 ? (error.message || "Unable to update course. Please check the form and try again.") : (error.message || "Unable to create course. Please try again."));
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  if (isLoadingCourse) return <div className="animate-pulse space-y-7"><div className="h-24 rounded-2xl bg-slate-900" /><div className="h-[640px] rounded-2xl bg-slate-900" /></div>;
+
   return (
-    <div className="space-y-7">
+    <div className="mx-auto w-full max-w-4xl space-y-7">
       <PageHeader
         eyebrow={role === "instructor" ? "My content" : "Course studio"}
-        title="Add Course"
-        description={canCreate ? "Create a course and publish its first learning path." : "Prepare your course details. The logged-in Instructor will become the course owner when creation is enabled."}
+        title={courseId ? "Edit Course" : "Add Course"}
+        description={canCreate ? (courseId ? "Update course information and keep your course content up to date." : "Create a course and publish its first learning path.") : "Prepare your course details. The logged-in Instructor will become the course owner when creation is enabled."}
       />
       <Card className="max-w-4xl p-5 sm:p-7">
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
@@ -168,21 +203,21 @@ export default function AddCourseForm({ role }) {
             <Field label="Level" required error={errors.level}><select name="level" value={form.level} onChange={updateField} className={inputClass}><option value="">Select level</option>{COURSE_LEVELS.map((level) => <option key={level}>{level}</option>)}</select></Field>
             <Field label="Duration (minutes)" error={errors.duration}><input name="duration" type="number" min="0" step="1" value={form.duration} onChange={updateField} className={inputClass} placeholder="Optional" /></Field>
             <Field label="Price" required error={errors.price}><input name="price" type="number" min="0" step="0.01" value={form.price} onChange={updateField} className={inputClass} placeholder="0.00" /></Field>
-            <TagInput label="Topics" placeholder="Enter topic..." items={topics} onAdd={(topic) => { setTopics((current) => [...current, topic]); setErrors((current) => ({ ...current, topic: "" })); }} onRemove={(topic) => setTopics((current) => current.filter((item) => item !== topic))} error={errors.topic} />
-            <TagInput label="Skills" placeholder="Enter skill..." items={skills} onAdd={(skill) => { setSkills((current) => [...current, skill]); setErrors((current) => ({ ...current, skills: "" })); }} onRemove={(skill) => setSkills((current) => current.filter((item) => item !== skill))} error={errors.skills} />
+            <TagInput label="Topics" placeholder="Enter topic..." items={topics} onAdd={(topic) => { setTopics((current) => [...current, topic]); setErrors((current) => ({ ...current, topic: "" })); }} onUpdate={(index, value) => setTopics((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} onRemove={(index) => setTopics((current) => current.filter((_, itemIndex) => itemIndex !== index))} error={errors.topic} />
+            <TagInput label="Skills" placeholder="Enter skill..." items={skills} onAdd={(skill) => { setSkills((current) => [...current, skill]); setErrors((current) => ({ ...current, skills: "" })); }} onUpdate={(index, value) => setSkills((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} onRemove={(index) => setSkills((current) => current.filter((_, itemIndex) => itemIndex !== index))} error={errors.skills} />
             <Field label="Extra Support" error={errors.extraSupport} className="sm:col-span-2"><textarea name="extraSupport" value={form.extraSupport} onChange={updateField} rows="3" className={`${inputClass} resize-none`} placeholder="Optional support or mentoring details" /></Field>
           </div>
 
-          <Field label="Thumbnail" required error={errors.thumbnail}>
+          <Field label="Thumbnail" required={!courseId} error={errors.thumbnail}>
             <div className="mt-1 grid gap-4 sm:grid-cols-[160px_1fr]">
               {preview ? <img src={preview} alt="Course thumbnail preview" className="aspect-video w-full rounded-xl border border-slate-800 object-cover sm:aspect-square" /> : <div className="flex aspect-video items-center justify-center rounded-xl border border-dashed border-slate-700 bg-slate-950/50 text-slate-600 sm:aspect-square"><Icon name="book" size={25} /></div>}
-              <div className="flex flex-col justify-center gap-3"><input id="course-thumbnail" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" onChange={handleThumbnail} className="sr-only" /><label htmlFor="course-thumbnail" className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:border-orange-500/50 hover:text-orange-300"><Icon name="plus" size={15} />{preview ? "Change thumbnail" : "Choose thumbnail"}</label><p className="text-xs leading-5 text-slate-500">Images use the existing unsigned Cloudinary upload setup.</p></div>
+              <div className="flex flex-col justify-center gap-3">{!courseId && <><input id="course-thumbnail" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" onChange={handleThumbnail} className="sr-only" /><label htmlFor="course-thumbnail" className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-xs font-semibold text-slate-300 transition hover:border-orange-500/50 hover:text-orange-300"><Icon name="plus" size={15} />{preview ? "Change thumbnail" : "Choose thumbnail"}</label></>}<p className="text-xs text-slate-500">{courseId ? "The existing course thumbnail is preserved." : "Images use the existing unsigned Cloudinary upload setup."}</p></div>
             </div>
           </Field>
 
           {submitError && <div role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">{submitError}</div>}
           {success && <div role="status" className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-300">{success}</div>}
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-800 pt-5 sm:flex-row sm:items-center sm:justify-between"><Link href={`/dashboard/${role}/courses`} className="text-xs font-semibold text-slate-500 hover:text-orange-300">Back to courses</Link><button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">{isSubmitting ? "Creating course..." : canCreate ? "Create course" : "Validate course form"}<Icon name="arrow" size={15} /></button></div>
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-800 pt-5 sm:flex-row sm:items-center sm:justify-between"><Link href={courseId ? `/courses/${courseId}` : `/dashboard/${role}/courses`} className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 hover:border-orange-500/50 hover:text-orange-300">Cancel</Link><button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">{isSubmitting ? (courseId ? "Updating..." : "Creating course...") : canCreate ? (courseId ? "Update Course" : "Create course") : "Validate course form"}<Icon name="arrow" size={15} /></button></div>
         </form>
       </Card>
     </div>

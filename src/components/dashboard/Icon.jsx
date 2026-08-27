@@ -14,6 +14,7 @@ const PATHS = {
   arrow: "M5 12h14m-6-6 6 6-6 6",
   check: "m5 12 4 4L19 6",
   dots: "M6 12h.01M12 12h.01M18 12h.01",
+  trash: "M3 6h18m-2 0v14H5V6m3 0V3h8v3m-6 4v8m4-8v8",
 };
 
 export default function Icon({ name, size = 18, strokeWidth = 1.8, className = "" }) {

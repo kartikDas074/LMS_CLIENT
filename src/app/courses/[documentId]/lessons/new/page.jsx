@@ -1,0 +1,3 @@
+import Link from "next/link";
+import { EmptyState } from "@/components/ui/DashboardUI";
+export default async function NewLessonPage({ params }) { const { documentId } = await params; return <div className="space-y-6"><EmptyState title="Lesson management is not configured yet" description={`Course ${documentId} is ready for a lesson flow, but this project has no Lesson content type or API yet.`} /><Link href={`/courses/${documentId}`} className="mx-auto block w-fit text-sm font-semibold text-orange-300 hover:text-orange-200">Back to course</Link></div>; }
