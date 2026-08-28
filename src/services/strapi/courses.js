@@ -68,6 +68,15 @@ export async function getCourse(documentId) {
   return request(`/courses/${encodeURIComponent(documentId)}?populate[thumbnail]=true&populate[instructor]=true`);
 }
 
+export async function getLessonsForCourse(courseId) {
+  const params = new URLSearchParams({
+    "filters[courseId][documentId][$eq]": String(courseId),
+    sort: "lessonOrder:asc",
+    "populate[videourl]": "true",
+  });
+  return request(`/lessons?${params.toString()}`);
+}
+
 export async function updateCourse(documentId, course, thumbnailId, instructorId) {
   if (!documentId) throw new Error("The course documentId is missing.");
   if (thumbnailId == null) throw new Error("The existing course thumbnail could not be resolved.");
@@ -135,4 +144,4 @@ export async function createCourse(course, thumbnailFile, options = {}) {
   });
 }
 
-export { COURSE_LEVELS };
+export { COURSE_LEVELS, request };

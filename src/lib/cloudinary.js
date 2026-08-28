@@ -97,3 +97,20 @@ export async function uploadToCloudinary(file) {
     height: data.height,
   };
 }
+
+export async function uploadVideoToCloudinary(file) {
+  const allowedTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo", "video/x-matroska"];
+  if (!file) throw new Error("No video selected.");
+  if (!allowedTypes.includes(file.type)) throw new Error("Please select a valid video file (MP4, WebM, MOV, AVI, or MKV).");
+  if (file.size > 500 * 1024 * 1024) throw new Error("Video size must be less than 500MB.");
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
+  if (!cloudName || !uploadPreset) throw new Error("Cloudinary video upload is not configured.");
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("upload_preset", uploadPreset);
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: "POST", body: formData });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(data?.error?.message || `Video upload failed (HTTP ${response.status}).`);
+  return { url: data.secure_url || data.url, publicId: data.public_id, format: data.format, resourceType: data.resource_type || "video", bytes: data.bytes };
+}

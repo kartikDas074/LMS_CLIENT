@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/dashboard/Icon";
 import { Card, EmptyState, StatusBadge } from "@/components/ui/DashboardUI";
-import { deleteCourse, getCourse, getCourseImageUrl } from "@/services/strapi/courses";
+import { deleteCourse, getCourse, getCourseImageUrl, getLessonsForCourse } from "@/services/strapi/courses";
 
 const list = (value) => Array.isArray(value) ? value : [];
 const instructorName = (value) => value?.username || value?.email || "Not specified";
@@ -16,12 +16,20 @@ export default function CourseDetails({ documentId }) {
   const [state, setState] = useState("loading");
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [lessons, setLessons] = useState([]);
+  const [lessonsError, setLessonsError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     getCourse(documentId)
       .then((response) => { setCourse(response?.data || response); setState("ready"); })
       .catch((error) => { console.error("[courses] Failed to load course", error); setState("error"); });
+  }, [documentId]);
+
+  useEffect(() => {
+    getLessonsForCourse(documentId)
+      .then((response) => setLessons(response?.data || []))
+      .catch((error) => { console.error("[lessons] Failed to load course lessons", error); setLessonsError("Unable to load lessons."); });
   }, [documentId]);
 
   if (state === "loading") return <div className="animate-pulse space-y-6"><div className="h-72 rounded-2xl bg-slate-900" /><div className="h-40 rounded-2xl bg-slate-900" /></div>;
@@ -50,7 +58,7 @@ export default function CourseDetails({ documentId }) {
       </div>
     </section>
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(260px,0.7fr)]">
-      <div className="space-y-6"><Card className="p-6"><h2 className="text-lg font-semibold text-white">Course Overview</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-400">{course.description}</p></Card><Card className="p-6"><h2 className="text-lg font-semibold text-white">What you&apos;ll learn</h2><div className="mt-4 flex flex-wrap gap-2">{list(course.skills).map((skill) => <span key={skill} className="rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-xs font-medium text-orange-200">{skill}</span>)}</div></Card><Card className="p-6"><h2 className="text-lg font-semibold text-white">Course Topics</h2><ol className="mt-4 space-y-3">{list(course.topic).map((topic, index) => <li key={topic} className="flex gap-3 text-sm text-slate-300"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs text-orange-300">{index + 1}</span>{topic}</li>)}</ol></Card></div>
+      <div className="space-y-6"><Card className="p-6"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold text-white">Lessons</h2><Link href={`/courses/${documentId}/lessons/new`} className="inline-flex items-center gap-2 rounded-xl border border-orange-500/25 px-3 py-2 text-xs font-semibold text-orange-300 hover:bg-orange-500/10"><Icon name="plus" size={14} />Add Lesson</Link></div>{lessonsError ? <p className="mt-4 text-sm text-red-300">{lessonsError}</p> : lessons.length === 0 ? <p className="mt-4 text-sm text-slate-500">No lessons have been added yet.</p> : <ol className="mt-5 divide-y divide-slate-800">{lessons.map((lesson) => <li key={lesson.documentId || lesson.id} className="flex items-center gap-3 py-3 first:pt-0"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-semibold text-orange-300">{String(lesson.lessonOrder).padStart(2, "0")}</span><div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-200">{lesson.title}</p><p className="text-xs text-slate-500">{lesson.duration ? `${lesson.duration} minutes` : "Duration not specified"}</p></div></li>)}</ol>}</Card><Card className="p-6"><h2 className="text-lg font-semibold text-white">Course Overview</h2><p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-400">{course.description}</p></Card><Card className="p-6"><h2 className="text-lg font-semibold text-white">What you&apos;ll learn</h2><div className="mt-4 flex flex-wrap gap-2">{list(course.skills).map((skill) => <span key={skill} className="rounded-lg border border-orange-500/20 bg-orange-500/10 px-3 py-2 text-xs font-medium text-orange-200">{skill}</span>)}</div></Card><Card className="p-6"><h2 className="text-lg font-semibold text-white">Course Topics</h2><ol className="mt-4 space-y-3">{list(course.topic).map((topic, index) => <li key={topic} className="flex gap-3 text-sm text-slate-300"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs text-orange-300">{index + 1}</span>{topic}</li>)}</ol></Card></div>
       <Card className="h-fit p-6"><h2 className="text-lg font-semibold text-white">Course Information</h2><dl className="mt-5 divide-y divide-slate-800">{[["Level", course.level], ["Duration", course.duration ? `${course.duration} minutes` : "Not specified"], ["Price", `$${Number(course.price || 0).toFixed(2)}`], ["Instructor", instructorName(course.instructor)], ["Created", formatDate(course.createdAt)], ["Updated", formatDate(course.updatedAt)], ["Extra support", course.extraSupport || "Not specified"]].map(([label, value]) => <div key={label} className="py-3 first:pt-0"><dt className="text-[11px] font-bold uppercase tracking-wider text-slate-600">{label}</dt><dd className="mt-1 text-sm text-slate-300">{value}</dd></div>)}</dl></Card>
     </div>
   </div>;
