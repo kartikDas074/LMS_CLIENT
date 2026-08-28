@@ -69,7 +69,7 @@ export default function QuizForm({ role, courseId, quizId }) {
     try {
       if (editing) await updateQuiz(quizId, { ...form, questions: payload });
       else await createQuiz({ ...form, courseId: course.documentId || course.id, questions: payload });
-      router.push(`/courses/${course.documentId || course.id}`);
+      router.push(`/dashboard/${role}/quizzes/${course.documentId || course.id}`);
     } catch (error) { console.error("[quizzes] Failed to save quiz", error); setSubmitError(error.message || "Unable to save quiz."); setIsSubmitting(false); }
   }
 

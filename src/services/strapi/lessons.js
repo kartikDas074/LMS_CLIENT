@@ -43,3 +43,53 @@ export async function createLesson({ title, description, lessonOrder, duration, 
     }),
   });
 }
+
+export async function getLesson(lessonId) {
+  return request(`/lessons/${encodeURIComponent(lessonId)}?populate[videourl]=true&populate[courseId]=true`);
+}
+
+export async function updateLesson(lessonId, { title, description, lessonOrder, duration, videoFile, videoUrl }) {
+  let updateData = {
+    title: title.trim(),
+    description: description.trim(),
+    lessonOrder: Number(lessonOrder),
+    duration: Number(duration),
+  };
+
+  // Only update video if new file/URL is provided
+  if (videoFile || videoUrl) {
+    let videoIds = [];
+    if (videoFile) {
+      const uploaded = await uploadVideoToCloudinary(videoFile);
+      const asset = await request("/course-assets/cloudinary", {
+        method: "POST",
+        body: JSON.stringify({ ...uploaded, name: videoFile.name }),
+      });
+      videoIds = [asset.id];
+    } else if (videoUrl) {
+      const parsedUrl = new URL(videoUrl);
+      if (!/^https?:$/.test(parsedUrl.protocol)) throw new Error("Video URL must use http or https.");
+      const asset = await request("/course-assets/cloudinary", {
+        method: "POST",
+        body: JSON.stringify({
+          url: parsedUrl.toString(),
+          publicId: `external-${Date.now().toString(36)}`,
+          format: "mp4",
+          resourceType: "video",
+          name: "External lesson video",
+        }),
+      });
+      videoIds = [asset.id];
+    }
+    updateData.videourl = videoIds;
+  }
+
+  return request(`/lessons/${encodeURIComponent(lessonId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ data: updateData }),
+  });
+}
+
+export async function deleteLesson(lessonId) {
+  return request(`/lessons/${encodeURIComponent(lessonId)}`, { method: "DELETE" });
+}

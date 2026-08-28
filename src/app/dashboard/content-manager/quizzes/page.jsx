@@ -1,2 +1,5 @@
-import QuizManagement from "@/components/dashboard/QuizManagement";
-export default function ContentQuizzesPage() { return <QuizManagement role="content-manager" />; }
+import CourseSelector from "@/components/dashboard/CourseSelector";
+
+export default function ContentManagerQuizzesPage() {
+  return <CourseSelector role="content-manager" managementType="quizzes" />;
+}
