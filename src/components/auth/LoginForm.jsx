@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { getDashboardUrl, normalizeRole } from "@/config/dashboardNavigation";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -68,13 +69,14 @@ export default function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await login({
+      const authData = await login({
         identifier: formData.email.trim(),
         password: formData.password,
       });
 
-      // Redirect to homepage or explore upon successful login
-      router.push("/");
+      // Redirect to the role-appropriate dashboard
+      const role = normalizeRole(authData?.user?.role);
+      router.push(getDashboardUrl(role));
     } catch (err) {
       console.error("Login failed:", err);
       setServerError(
