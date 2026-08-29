@@ -139,21 +139,31 @@ export async function createCourse(course, thumbnailFile, options = {}) {
   });
 }
 
-async function publicRequest(path) {
+export async function publicRequest(path) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
     },
   });
-  const data = await response.json().catch(() => null);
+
+  let data = null;
+  try {
+    const text = await response.text();
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null;
+  }
+
   if (!response.ok) {
-    const error = new Error(data?.error?.message || data?.message || `Request failed (HTTP ${response.status}).`);
+    const message = data?.error?.message || data?.message || `Request failed (HTTP ${response.status}).`;
+    const error = new Error(message);
     error.status = response.status;
     error.response = data;
     console.error("[courses] Public request failed", { path, status: response.status, response: data });
     throw error;
   }
-  return data;
+
+  return data ?? { data: [] };
 }
 
 export async function getPublicCourses() {

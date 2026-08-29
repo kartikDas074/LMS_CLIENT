@@ -1,4 +1,4 @@
-import { request, publicRequest } from "@/services/strapi/courses";
+import { request } from "@/services/strapi/courses";
 
 /**
  * Creates an enrollment record for the current authenticated student.

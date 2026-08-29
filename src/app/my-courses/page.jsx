@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { getUserEnrollments } from "@/services/strapi/enrolls";
+import { getMyEnrollments } from "@/services/strapi/enrolls";
 import { getLessonsForCourse, getCourseImageUrl } from "@/services/strapi/courses";
 import { getLessonProgresses } from "@/services/strapi/lessonProgress";
 
