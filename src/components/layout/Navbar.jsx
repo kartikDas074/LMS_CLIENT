@@ -8,7 +8,7 @@ import { getDashboardUrl, normalizeRole } from "@/config/dashboardNavigation";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Explore Courses", href: "/explore" },
+  { label: "Explore Courses", href: "/courses" },
   { label: "Blog", href: "/blog" },
 ];
 

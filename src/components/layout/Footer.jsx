@@ -64,7 +64,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/explore"
+                  href="/courses"
                   className="text-slate-400 transition hover:text-indigo-400"
                 >
                   Explore Courses

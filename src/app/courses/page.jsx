@@ -1,2 +1,5 @@
-import CourseManagement from "@/components/dashboard/CourseManagement";
-export default function CoursesPage() { return <CourseManagement role="admin" />; }
+import CoursesClient from "@/components/public/CoursesClient";
+
+export default function CoursesPage() {
+  return <CoursesClient />;
+}

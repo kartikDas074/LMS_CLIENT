@@ -1,2 +1,6 @@
-import CourseDetails from "@/components/dashboard/CourseDetails";
-export default async function CourseDetailsPage({ params }) { const { documentId } = await params; return <CourseDetails documentId={documentId} />; }
+import CourseDetailClient from "@/components/public/CourseDetailClient";
+
+export default async function CourseDetailPage({ params }) {
+  const { documentId } = await params;
+  return <CourseDetailClient documentId={documentId} />;
+}

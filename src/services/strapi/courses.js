@@ -139,4 +139,36 @@ export async function createCourse(course, thumbnailFile, options = {}) {
   });
 }
 
+async function publicRequest(path) {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const error = new Error(data?.error?.message || data?.message || `Request failed (HTTP ${response.status}).`);
+    error.status = response.status;
+    error.response = data;
+    console.error("[courses] Public request failed", { path, status: response.status, response: data });
+    throw error;
+  }
+  return data;
+}
+
+export async function getPublicCourses() {
+  const params = new URLSearchParams({
+    "pagination[page]": "1",
+    "pagination[pageSize]": "50",
+    "populate[thumbnail]": "true",
+    "populate[instructor]": "true",
+    sort: "createdAt:desc",
+  });
+  return publicRequest(`/courses?${params.toString()}`);
+}
+
+export async function getPublicCourse(documentId) {
+  return publicRequest(`/courses/${encodeURIComponent(documentId)}?populate[thumbnail]=true&populate[instructor]=true`);
+}
+
 export { COURSE_LEVELS, request };
