@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, EmptyState, PageHeader } from "@/components/ui/DashboardUI";
 import { getLesson } from "@/services/strapi/lessons";
+import { fetchCurrentUser, getStoredToken } from "@/lib/auth";
 import Icon from "@/components/dashboard/Icon";
 
 const formatVideoUrl = (videourl) => {
@@ -30,8 +31,19 @@ export default function LessonView({ lessonId, role = "admin" }) {
     async function load() {
       try {
         const response = await getLesson(lessonId);
+        const loadedLesson = response?.data || response;
+
+        // Ownership check for instructors
+        if (role === "instructor") {
+          const currentUser = await fetchCurrentUser(getStoredToken()).catch(() => null);
+          const courseInstructorId = loadedLesson.courseId?.instructor?.id;
+          if (courseInstructorId && String(courseInstructorId) !== String(currentUser?.id)) {
+            throw new Error("You are not authorized to view this lesson.");
+          }
+        }
+
         if (active) {
-          setLesson(response?.data || response);
+          setLesson(loadedLesson);
           setState("ready");
         }
       } catch (loadError) {
@@ -44,7 +56,7 @@ export default function LessonView({ lessonId, role = "admin" }) {
     }
     load();
     return () => { active = false; };
-  }, [lessonId]);
+  }, [lessonId, role]);
 
   if (state === "loading") {
     return (

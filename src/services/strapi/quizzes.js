@@ -13,7 +13,7 @@ export async function getQuizzes({ courseId, search = "" } = {}) {
 }
 
 export async function getQuiz(quizId) {
-  return request(`/quizzes/${encodeURIComponent(quizId)}?populate[courseId]=true`);
+  return request(`/quizzes/${encodeURIComponent(quizId)}?populate[courseId][populate][instructor]=true`);
 }
 
 export async function createQuiz({ title, description, timelimit, courseId, questions }) {
@@ -25,10 +25,13 @@ export async function createQuiz({ title, description, timelimit, courseId, ques
   });
 }
 
-export async function updateQuiz(quizId, { title, description, timelimit, questions }) {
+export async function updateQuiz(quizId, changedData) {
+  if (!changedData || Object.keys(changedData).length === 0) {
+    return Promise.resolve({ data: {} });
+  }
   return request(`/quizzes/${encodeURIComponent(quizId)}`, {
     method: "PUT",
-    body: JSON.stringify({ data: { title: title.trim(), description: description.trim(), question: { questions }, timelimit: Number(timelimit) } }),
+    body: JSON.stringify({ data: changedData }),
   });
 }
 

@@ -45,16 +45,11 @@ export async function createLesson({ title, description, lessonOrder, duration, 
 }
 
 export async function getLesson(lessonId) {
-  return request(`/lessons/${encodeURIComponent(lessonId)}?populate[videourl]=true&populate[courseId]=true`);
+  return request(`/lessons/${encodeURIComponent(lessonId)}?populate[videourl]=true&populate[courseId][populate][instructor]=true`);
 }
 
-export async function updateLesson(lessonId, { title, description, lessonOrder, duration, videoFile, videoUrl }) {
-  let updateData = {
-    title: title.trim(),
-    description: description.trim(),
-    lessonOrder: Number(lessonOrder),
-    duration: Number(duration),
-  };
+export async function updateLesson(lessonId, changedData, { videoFile, videoUrl } = {}) {
+  let updateData = { ...changedData };
 
   // Only update video if new file/URL is provided
   if (videoFile || videoUrl) {
@@ -82,6 +77,10 @@ export async function updateLesson(lessonId, { title, description, lessonOrder, 
       videoIds = [asset.id];
     }
     updateData.videourl = videoIds;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    return Promise.resolve({ data: {} });
   }
 
   return request(`/lessons/${encodeURIComponent(lessonId)}`, {

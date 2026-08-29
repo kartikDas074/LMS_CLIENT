@@ -23,6 +23,8 @@ export default function LessonForm({ role, courseId, lessonId }) {
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [originalLesson, setOriginalLesson] = useState(null);
+
   useEffect(() => {
     let active = true;
     async function load() {
@@ -45,6 +47,7 @@ export default function LessonForm({ role, courseId, lessonId }) {
           const lessonResponse = await getLesson(lessonId);
           const lesson = lessonResponse?.data || lessonResponse;
           if (active) {
+            setOriginalLesson(lesson);
             setForm({
               title: lesson.title || "",
               description: lesson.description || "",
@@ -114,7 +117,16 @@ export default function LessonForm({ role, courseId, lessonId }) {
       };
 
       if (editing) {
-        await updateLesson(lessonId, payload);
+        const changedData = {};
+        if (form.title.trim() !== originalLesson?.title) changedData.title = form.title.trim();
+        if (form.description.trim() !== originalLesson?.description) changedData.description = form.description.trim();
+        if (String(form.lessonOrder) !== String(originalLesson?.lessonOrder)) changedData.lessonOrder = Number(form.lessonOrder);
+        if (String(form.duration) !== String(originalLesson?.duration)) changedData.duration = Number(form.duration);
+        
+        await updateLesson(lessonId, changedData, {
+          videoFile: videoMode === "file" ? video : null,
+          videoUrl: videoMode === "url" ? videoUrl.trim() : "",
+        });
       } else {
         await createLesson({ ...payload, courseId: course.documentId || course.id });
       }

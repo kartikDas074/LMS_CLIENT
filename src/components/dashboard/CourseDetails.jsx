@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/dashboard/Icon";
 import { Card, EmptyState, StatusBadge } from "@/components/ui/DashboardUI";
 import { deleteCourse, getCourse, getCourseImageUrl, getLessonsForCourse } from "@/services/strapi/courses";
+import { useAuth } from "@/context/AuthContext";
 
 const list = (value) => Array.isArray(value) ? value : [];
 const instructorName = (value) => value?.username || value?.email || "Not specified";
 const formatDate = (value) => value ? new Date(value).toLocaleDateString() : "Not specified";
 
 export default function CourseDetails({ documentId }) {
+  const { role: currentRole } = useAuth();
   const [course, setCourse] = useState(null);
   const [state, setState] = useState("loading");
   const [deleteError, setDeleteError] = useState("");
@@ -52,7 +54,7 @@ export default function CourseDetails({ documentId }) {
         <div className="relative flex min-h-[280px] flex-col justify-end gap-5 p-6 sm:p-9">
           <StatusBadge status={course.publishedAt ? "Published" : "Draft"} />
           <div><p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-orange-400">{course.level || "Course"}</p><h1 className="max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-4xl">{course.title}</h1><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{course.shortDescription}</p></div>
-          <div className="flex flex-wrap gap-2"><Link href={`/courses/${documentId}/edit`} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-400"><Icon name="edit" size={15} />Edit Course</Link><Link href={`/courses/${documentId}/lessons/new`} className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:border-orange-500/50 hover:text-orange-300"><Icon name="plus" size={15} />Add Lesson</Link><button type="button" onClick={handleDelete} disabled={isDeleting} className="inline-flex items-center gap-2 rounded-xl border border-red-400/30 px-4 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"><Icon name="trash" size={15} />{isDeleting ? "Deleting..." : "Delete Course"}</button></div>
+          <div className="flex flex-wrap gap-2"><Link href={currentRole === "instructor" ? `/dashboard/instructor/courses/${documentId}/edit` : `/courses/${documentId}/edit`} className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-400"><Icon name="edit" size={15} />Edit Course</Link><Link href={`/courses/${documentId}/lessons/new`} className="inline-flex items-center gap-2 rounded-xl border border-slate-600 bg-slate-900/70 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:border-orange-500/50 hover:text-orange-300"><Icon name="plus" size={15} />Add Lesson</Link><button type="button" onClick={handleDelete} disabled={isDeleting} className="inline-flex items-center gap-2 rounded-xl border border-red-400/30 px-4 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/10 disabled:opacity-50"><Icon name="trash" size={15} />{isDeleting ? "Deleting..." : "Delete Course"}</button></div>
           {deleteError && <p role="alert" className="text-sm text-red-300">{deleteError}</p>}
         </div>
       </div>

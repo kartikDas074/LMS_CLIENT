@@ -75,7 +75,7 @@ function TagInput({ label, placeholder, items, onAdd, onRemove, onUpdate, error 
 
 export default function AddCourseForm({ role, courseId }) {
   const { user: currentUser } = useAuth();
-  const canCreate = role === "admin" || role === "content-manager";
+  const canCreate = role === "admin" || role === "content-manager" || role === "instructor";
   const [form, setForm] = useState(initialForm);
   const [topics, setTopics] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -88,11 +88,22 @@ export default function AddCourseForm({ role, courseId }) {
   const [isLoadingCourse, setIsLoadingCourse] = useState(Boolean(courseId));
   const [existingThumbnailId, setExistingThumbnailId] = useState(null);
   const [existingInstructorId, setExistingInstructorId] = useState(null);
+  const [authError, setAuthError] = useState("");
+  const [originalCourse, setOriginalCourse] = useState(null);
 
   useEffect(() => {
     if (!courseId) return;
     getCourse(courseId).then((response) => {
       const course = response?.data || response;
+
+      // Ownership check for instructors
+      if (role === "instructor" && currentUser?.id && String(course.instructor?.id) !== String(currentUser.id)) {
+        setAuthError("You are not authorized to edit this course.");
+        setIsLoadingCourse(false);
+        return;
+      }
+
+      setOriginalCourse(course);
       setForm({ title: course.title || "", shortDescription: course.shortDescription || "", description: course.description || "", level: course.level || "", duration: course.duration ?? "", price: course.price ?? "", extraSupport: course.extraSupport || "" });
       setTopics(Array.isArray(course.topic) ? course.topic : []);
       setSkills(Array.isArray(course.skills) ? course.skills : []);
@@ -103,7 +114,7 @@ export default function AddCourseForm({ role, courseId }) {
       console.error("[courses] Failed to load course for editing", error);
       setSubmitError("Unable to load this course. Please try again.");
     }).finally(() => setIsLoadingCourse(false));
-  }, [courseId]);
+  }, [courseId, role, currentUser]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -146,8 +157,8 @@ export default function AddCourseForm({ role, courseId }) {
     setSubmitError("");
     setSuccess("");
     if (!validate()) return;
-    if (!canCreate && !(courseId && role === "instructor")) {
-      setSuccess("Your course form is ready. The logged-in Instructor will become the course owner when creation is enabled.");
+    if (!canCreate) {
+      setSubmitError("You do not have permission to create courses.");
       return;
     }
 
@@ -155,19 +166,32 @@ export default function AddCourseForm({ role, courseId }) {
     try {
       const cleanTopics = topics.map((item) => item.trim()).filter(Boolean);
       const cleanSkills = skills.map((item) => item.trim()).filter(Boolean);
-      const cleanForm = {
-        title: form.title.trim(),
-        shortDescription: form.shortDescription.trim(),
-        description: form.description.trim(),
-        level: form.level,
-        duration: form.duration,
-        price: form.price,
-        extraSupport: form.extraSupport.trim(),
-        topic: cleanTopics,
-        skills: cleanSkills,
-      };
+      
       if (courseId) {
-        await updateCourse(courseId, cleanForm, existingThumbnailId, existingInstructorId);
+        const changedData = {};
+        if (form.title.trim() !== originalCourse?.title) changedData.title = form.title.trim();
+        if (form.shortDescription.trim() !== originalCourse?.shortDescription) changedData.shortDescription = form.shortDescription.trim();
+        if (form.description.trim() !== originalCourse?.description) changedData.description = form.description.trim();
+        if (form.level !== originalCourse?.level) changedData.level = form.level;
+        if (String(form.duration) !== String(originalCourse?.duration ?? "")) changedData.duration = form.duration === "" ? null : Number(form.duration);
+        if (String(form.price) !== String(originalCourse?.price ?? "")) changedData.price = Number(form.price);
+        if (form.extraSupport.trim() !== (originalCourse?.extraSupport || "")) changedData.extraSupport = form.extraSupport.trim();
+        
+        // Topic and skills comparison is tricky, if lengths differ or items differ, we update
+        const originalTopics = Array.isArray(originalCourse?.topic) ? originalCourse.topic : [];
+        if (cleanTopics.length !== originalTopics.length || !cleanTopics.every((t, i) => t === originalTopics[i])) {
+          changedData.topic = cleanTopics;
+        }
+        
+        const originalSkills = Array.isArray(originalCourse?.skills) ? originalCourse.skills : [];
+        if (cleanSkills.length !== originalSkills.length || !cleanSkills.every((s, i) => s === originalSkills[i])) {
+          changedData.skills = cleanSkills;
+        }
+
+        // We do not send thumbnail or instructor unless we add thumbnail changing support here
+        // If thumbnail changed, we'd upload and send it. But for now we just don't send it if not changed.
+        
+        await updateCourse(courseId, changedData);
         setSuccess("Course updated successfully.");
       } else {
         await createCourse({ ...form, topic: topics, skills }, thumbnail, { role, currentUser });
@@ -187,12 +211,22 @@ export default function AddCourseForm({ role, courseId }) {
 
   if (isLoadingCourse) return <div className="animate-pulse space-y-7"><div className="h-24 rounded-2xl bg-slate-900" /><div className="h-[640px] rounded-2xl bg-slate-900" /></div>;
 
+  if (authError) {
+    return (
+      <div className="mx-auto w-full max-w-4xl space-y-7">
+        <Card className="border-red-400/20 bg-red-500/10 p-6">
+          <p className="text-sm text-red-200">{authError}</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-7">
       <PageHeader
         eyebrow={role === "instructor" ? "My content" : "Course studio"}
         title={courseId ? "Edit Course" : "Add Course"}
-        description={canCreate ? (courseId ? "Update course information and keep your course content up to date." : "Create a course and publish its first learning path.") : "Prepare your course details. The logged-in Instructor will become the course owner when creation is enabled."}
+        description={courseId ? "Update course information and keep your course content up to date." : "Create a course and publish its first learning path."}
       />
       <Card className="max-w-4xl p-5 sm:p-7">
         <form onSubmit={handleSubmit} noValidate className="space-y-6">
@@ -217,7 +251,7 @@ export default function AddCourseForm({ role, courseId }) {
 
           {submitError && <div role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-4 py-3 text-sm text-red-200">{submitError}</div>}
           {success && <div role="status" className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-300">{success}</div>}
-          <div className="flex flex-col-reverse gap-3 border-t border-slate-800 pt-5 sm:flex-row sm:items-center sm:justify-between"><Link href={courseId ? `/courses/${courseId}` : `/dashboard/${role}/courses`} className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 hover:border-orange-500/50 hover:text-orange-300">Cancel</Link><button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">{isSubmitting ? (courseId ? "Updating..." : "Creating course...") : canCreate ? (courseId ? "Update Course" : "Create course") : "Validate course form"}<Icon name="arrow" size={15} /></button></div>
+          <div className="flex flex-col-reverse gap-3 border-t border-slate-800 pt-5 sm:flex-row sm:items-center sm:justify-between"><Link href={courseId ? `/courses/${courseId}` : `/dashboard/${role}/courses`} className="inline-flex items-center justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 hover:border-orange-500/50 hover:text-orange-300">Cancel</Link><button type="submit" disabled={isSubmitting} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">{isSubmitting ? (courseId ? "Updating..." : "Creating course...") : (courseId ? "Update Course" : "Create course")}<Icon name="arrow" size={15} /></button></div>
         </form>
       </Card>
     </div>

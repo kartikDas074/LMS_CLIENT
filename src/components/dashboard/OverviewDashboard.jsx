@@ -5,6 +5,10 @@ import Icon from "@/components/dashboard/Icon";
 import { Card, PageHeader, StatusBadge } from "@/components/ui/DashboardUI";
 import { dashboardStats, courses, users, lessons } from "@/data/dashboardMockData";
 import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { getCourses } from "@/services/strapi/courses";
+import { getLessonsForCourse } from "@/services/strapi/courses";
+import { getQuizzes } from "@/services/strapi/quizzes";
 
 const copy = {
   admin: ["Admin overview", "A clear view of your learning platform operations.", "Recent platform activity"],
@@ -23,10 +27,68 @@ function getGreeting() {
 export default function OverviewDashboard({ role }) {
   const { user } = useAuth();
   const [eyebrow, description, sectionTitle] = copy[role] || copy.student;
-  const stats = dashboardStats[role] || [];
+  const defaultStats = dashboardStats[role] || [];
   const isStudent = role === "student";
   const displayName = user?.username || user?.email?.split("@")[0] || "there";
   const greeting = getGreeting();
+  const [instructorStats, setInstructorStats] = useState(null);
+  const [instructorCourses, setInstructorCourses] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  // Fetch instructor-specific stats
+  useEffect(() => {
+    if (role !== "instructor") return;
+    let active = true;
+    setStatsLoading(true);
+
+    async function loadInstructorStats() {
+      try {
+        const currentUser = user;
+        if (!currentUser?.id) return;
+
+        const coursesResponse = await getCourses({ page: 1, pageSize: 100 });
+        const myCourses = coursesResponse?.data || [];
+
+        if (!active) return;
+
+        setInstructorCourses(myCourses.slice(0, 4));
+
+        // Count lessons and quizzes across all instructor courses
+        let totalLessons = 0;
+        let totalQuizzes = 0;
+
+        for (const course of myCourses) {
+          const courseId = course.documentId || course.id;
+          try {
+            const lessonsResponse = await getLessonsForCourse(courseId);
+            totalLessons += lessonsResponse?.data?.length || 0;
+          } catch { /* ignore */ }
+          try {
+            const quizzesResponse = await getQuizzes({ courseId });
+            totalQuizzes += quizzesResponse?.data?.length || 0;
+          } catch { /* ignore */ }
+        }
+
+        if (active) {
+          setInstructorStats([
+            ["Total Courses", String(myCourses.length), "", "book"],
+            ["Total Lessons", String(totalLessons), "", "play"],
+            ["Total Quizzes", String(totalQuizzes), "", "clipboard"],
+            ["Published", String(myCourses.filter((c) => c.publishedAt).length), "", "check"],
+          ]);
+        }
+      } catch (err) {
+        console.error("[instructor] Failed to load stats", err);
+      } finally {
+        if (active) setStatsLoading(false);
+      }
+    }
+
+    loadInstructorStats();
+    return () => { active = false; };
+  }, [role, user]);
+
+  const stats = role === "instructor" && instructorStats ? instructorStats : defaultStats;
 
   return (
     <div className="space-y-8">
@@ -78,13 +140,13 @@ export default function OverviewDashboard({ role }) {
             </div>
           ) : (
             <div className="divide-y divide-slate-800/70">
-              {(role === "admin" ? users : courses).slice(0, 4).map((item) => (
-                <div key={item.title || item.name} className="flex items-center justify-between gap-3 px-5 py-4">
+              {(role === "instructor" ? instructorCourses : role === "admin" ? users : courses).slice(0, 4).map((item) => (
+                <div key={item.documentId || item.id || item.title || item.name} className="flex items-center justify-between gap-3 px-5 py-4">
                   <div>
                     <p className="text-sm font-medium text-slate-200">{item.title || item.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">{item.subtitle || item.instructor || item.category}</p>
+                    <p className="mt-1 text-xs text-slate-500">{item.shortDescription || item.subtitle || item.instructor || item.category}</p>
                   </div>
-                  <StatusBadge status={item.status || "Published"} />
+                  <StatusBadge status={item.publishedAt ? "Published" : item.status || "Draft"} />
                 </div>
               ))}
             </div>

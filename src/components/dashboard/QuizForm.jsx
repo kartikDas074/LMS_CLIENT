@@ -21,6 +21,7 @@ export default function QuizForm({ role, courseId, quizId }) {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [originalQuiz, setOriginalQuiz] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -35,7 +36,11 @@ export default function QuizForm({ role, courseId, quizId }) {
         if (role === "instructor" && String(loadedCourse.instructor?.id) !== String(currentUser?.id)) throw new Error("You are not authorized to manage quizzes for this course.");
         if (active) {
           setCourse(loadedCourse);
-          if (quiz) { setForm({ title: quiz.title || "", description: quiz.description || "", timelimit: quiz.timelimit || "" }); setQuestions(quiz.questions.length ? quiz.questions : [blankQuestion()]); }
+          if (quiz) { 
+            setOriginalQuiz(quiz);
+            setForm({ title: quiz.title || "", description: quiz.description || "", timelimit: quiz.timelimit || "" }); 
+            setQuestions(quiz.questions.length ? quiz.questions : [blankQuestion()]); 
+          }
           setState("ready");
         }
       } catch (error) { console.error("[quizzes] Failed to load quiz/course", error); if (active) { setSubmitError(error.message || "Unable to load quiz."); setState("error"); } }
@@ -67,8 +72,21 @@ export default function QuizForm({ role, courseId, quizId }) {
     setIsSubmitting(true); setSubmitError("");
     const payload = questions.map((item) => ({ question: item.question.trim(), options: item.options.map((option) => option.trim()), correctAnswer: Number(item.correctAnswer), marks: Number(item.marks) }));
     try {
-      if (editing) await updateQuiz(quizId, { ...form, questions: payload });
-      else await createQuiz({ ...form, courseId: course.documentId || course.id, questions: payload });
+      if (editing) {
+        const changedData = {};
+        if (form.title.trim() !== originalQuiz?.title) changedData.title = form.title.trim();
+        if (form.description.trim() !== originalQuiz?.description) changedData.description = form.description.trim();
+        if (String(form.timelimit) !== String(originalQuiz?.timelimit)) changedData.timelimit = Number(form.timelimit);
+        
+        // Deep compare questions is complex, for simplicity if edited we just send new questions payload if it's different stringified
+        const origQuestionsStr = JSON.stringify(originalQuiz?.questions || []);
+        const newQuestionsStr = JSON.stringify(payload);
+        if (origQuestionsStr !== newQuestionsStr) changedData.question = { questions: payload };
+
+        await updateQuiz(quizId, changedData);
+      } else {
+        await createQuiz({ ...form, courseId: course.documentId || course.id, questions: payload });
+      }
       router.push(`/dashboard/${role}/quizzes/${course.documentId || course.id}`);
     } catch (error) { console.error("[quizzes] Failed to save quiz", error); setSubmitError(error.message || "Unable to save quiz."); setIsSubmitting(false); }
   }

@@ -26,11 +26,11 @@ export const dashboardNavigation = {
     { label: "Blog Management", href: "/dashboard/content-manager/blogs", icon: icon("edit") },
   ],
   instructor: [
+    { label: "Dashboard", href: "/dashboard/instructor", icon: icon("grid") },
     { label: "Course Management", href: "/dashboard/instructor/courses", icon: icon("book"), note: "My Courses" },
     { label: "Add Course", href: "/dashboard/instructor/courses/create", icon: icon("plus") },
     { label: "Lesson Management", href: "/dashboard/instructor/lessons", icon: icon("play"), note: "My Lessons" },
     { label: "Quiz Management", href: "/dashboard/instructor/quizzes", icon: icon("clipboard"), note: "My Quizzes" },
-    { label: "Blog Management", href: "/dashboard/instructor/blogs", icon: icon("edit") },
   ],
   student: [
     { label: "My Courses", href: "/dashboard/student/courses", icon: icon("book") },
