@@ -99,14 +99,14 @@ export default function Navbar() {
           {isAuthenticated ? (
             <div className="flex items-center gap-3">
               <Link
-                href={dashboardUrl}
+                href={role === "student" ? "/my-courses" : dashboardUrl}
                 className={`inline-flex items-center justify-center rounded-lg border px-3.5 py-2 text-xs font-semibold transition ${
-                  pathname.startsWith("/dashboard")
+                  (role === "student" ? pathname.startsWith("/my-courses") : pathname.startsWith("/dashboard"))
                     ? "border-orange-500/50 bg-orange-500/10 text-orange-300"
                     : "border-slate-200 bg-white text-slate-700 hover:border-orange-500/50 hover:text-orange-400"
                 }`}
               >
-                Dashboard
+                {role === "student" ? "My Courses" : "Dashboard"}
               </Link>
               <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 py-1.5 pl-2 pr-3">
                 <div className="relative h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">
@@ -208,11 +208,11 @@ export default function Navbar() {
             {isAuthenticated ? (
               <div className="space-y-3">
                 <Link
-                  href={dashboardUrl}
+                  href={role === "student" ? "/my-courses" : dashboardUrl}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex w-full items-center justify-between rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-2.5 text-sm font-semibold text-orange-300 transition hover:bg-orange-500/20"
                 >
-                  Dashboard
+                  {role === "student" ? "My Courses" : "Dashboard"}
                   <span className="text-[10px] uppercase tracking-wider text-orange-400">{role}</span>
                 </Link>
                 <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl">

@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getPublicCourse, getCourseImageUrl } from "@/services/strapi/courses";
+import { useAuth } from "@/context/AuthContext";
+import { createEnrollment, checkUserEnrollment } from "@/services/strapi/enrolls";
 
 const LEVEL_COLORS = {
   Beginner: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
@@ -29,8 +32,14 @@ function SkeletonDetail() {
 }
 
 export default function CourseDetailClient({ documentId }) {
+  const router = useRouter();
+  const { user, isAuthenticated, role } = useAuth();
+  
   const [course, setCourse] = useState(null);
   const [fetchError, setFetchError] = useState("");
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [enrollError, setEnrollError] = useState("");
 
   const loading = Boolean(documentId) && course === null && !fetchError;
   const error = !documentId ? "Course identifier is missing." : fetchError;
@@ -49,10 +58,39 @@ export default function CourseDetailClient({ documentId }) {
         if (isMounted) setFetchError(err.message || "Course not found.");
       });
 
+    if (isAuthenticated && role === "student") {
+      checkUserEnrollment(documentId).then((enrolled) => {
+        if (isMounted) setIsEnrolled(enrolled);
+      });
+    }
+
     return () => {
       isMounted = false;
     };
-  }, [documentId]);
+  }, [documentId, isAuthenticated, role]);
+
+  const handleEnroll = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/courses/${documentId}`);
+      return;
+    }
+    if (role !== "student") {
+      setEnrollError("Only students can enroll in courses.");
+      return;
+    }
+    
+    setIsEnrolling(true);
+    setEnrollError("");
+    try {
+      await createEnrollment(documentId);
+      setIsEnrolled(true);
+      router.push(`/my-courses/${documentId}`);
+    } catch (err) {
+      setEnrollError(err.message || "Failed to enroll. Please try again.");
+    } finally {
+      setIsEnrolling(false);
+    }
+  };
 
   const image = course ? getCourseImageUrl(course.thumbnail) : "";
   const instructor = course?.instructor?.username || course?.instructor?.email || null;
@@ -152,15 +190,30 @@ export default function CourseDetailClient({ documentId }) {
               </div>
 
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <Link
-                  href={`/register`}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110"
-                >
-                  Enroll Now
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </Link>
+                {enrollError && (
+                  <div className="w-full text-red-400 text-xs mb-2">{enrollError}</div>
+                )}
+                {isEnrolled ? (
+                  <Link
+                    href={`/my-courses/${documentId}`}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/10 transition hover:brightness-110"
+                  >
+                    Continue Learning
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleEnroll}
+                    disabled={isEnrolling}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110 disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                    {!isEnrolling && (
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    )}
+                  </button>
+                )}
                 <Link
                   href="/courses"
                   className="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950/60 px-6 py-3 text-sm font-semibold text-slate-300 transition hover:border-orange-500/40 hover:text-orange-300"
@@ -280,15 +333,30 @@ export default function CourseDetailClient({ documentId }) {
                 </div>
                 <div className="mt-4 sm:mt-0 flex flex-col items-center sm:items-end gap-2">
                   <span className="text-2xl font-extrabold text-slate-100">${price.toFixed(2)}</span>
-                  <Link
-                    href={`/register`}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110"
-                  >
-                    Enroll Now
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </Link>
+                  {enrollError && (
+                    <div className="w-full text-red-400 text-xs text-right mt-1">{enrollError}</div>
+                  )}
+                  {isEnrolled ? (
+                    <Link
+                      href={`/my-courses/${documentId}`}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/10 transition hover:brightness-110"
+                    >
+                      Continue Learning
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={handleEnroll}
+                      disabled={isEnrolling}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-500/10 transition hover:brightness-110 disabled:opacity-70"
+                    >
+                      {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                      {!isEnrolling && (
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </section>
@@ -327,12 +395,22 @@ export default function CourseDetailClient({ documentId }) {
                   <p className="text-[10px] uppercase tracking-wider text-slate-500">Total Price</p>
                   <p className="text-lg font-extrabold text-slate-100">${price.toFixed(2)}</p>
                 </div>
-                <Link
-                  href={`/register`}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/10 transition hover:brightness-110"
-                >
-                  Enroll Now
-                </Link>
+                {isEnrolled ? (
+                  <Link
+                    href={`/my-courses/${documentId}`}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-emerald-500/10 transition hover:brightness-110"
+                  >
+                    Continue Learning
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handleEnroll}
+                    disabled={isEnrolling}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-xs font-semibold text-white shadow-sm shadow-orange-500/10 transition hover:brightness-110 disabled:opacity-70"
+                  >
+                    {isEnrolling ? "Enrolling..." : "Enroll Now"}
+                  </button>
+                )}
               </div>
             </div>
 
