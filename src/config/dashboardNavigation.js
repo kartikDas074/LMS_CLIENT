@@ -10,6 +10,7 @@ const icon = (name) => name;
 export const dashboardNavigation = {
   admin: [
     { label: "Dashboard", href: "/dashboard/admin", icon: icon("grid") },
+    { label: "Student Progress", href: "/dashboard/admin/student-progress", icon: icon("chart") },
     { label: "User Management", href: "/dashboard/admin/users", icon: icon("users") },
     { label: "Course Management", href: "/dashboard/admin/courses", icon: icon("book") },
     { label: "Add Course", href: "/dashboard/admin/courses/create", icon: icon("plus") },
@@ -19,6 +20,7 @@ export const dashboardNavigation = {
   ],
   "content-manager": [
     { label: "Dashboard", href: "/dashboard/content-manager", icon: icon("grid") },
+    { label: "Student Progress", href: "/dashboard/content-manager/student-progress", icon: icon("chart") },
     { label: "Course Management", href: "/dashboard/content-manager/courses", icon: icon("book") },
     { label: "Add Course", href: "/dashboard/content-manager/courses/create", icon: icon("plus") },
     { label: "Lesson Management", href: "/dashboard/content-manager/lessons", icon: icon("play") },
@@ -27,6 +29,7 @@ export const dashboardNavigation = {
   ],
   instructor: [
     { label: "Dashboard", href: "/dashboard/instructor", icon: icon("grid") },
+    { label: "Student Progress", href: "/dashboard/instructor/student-progress", icon: icon("chart") },
     { label: "Course Management", href: "/dashboard/instructor/courses", icon: icon("book"), note: "My Courses" },
     { label: "Add Course", href: "/dashboard/instructor/courses/create", icon: icon("plus") },
     { label: "Lesson Management", href: "/dashboard/instructor/lessons", icon: icon("play"), note: "My Lessons" },
