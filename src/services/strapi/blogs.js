@@ -129,13 +129,22 @@ export async function getBlogs({ page = 1, pageSize = 10, search = "", status = 
 }
 
 export async function getPublishedBlogs() {
-  // Strapi v5 with draftAndPublish enabled automatically returns only published
-  // documents to unauthenticated requests — no publishedAt filter needed.
-  return publicRequest("/blogs?populate[image]=true&populate[creator]=true&sort=publishedAt:desc");
+  return publicRequest("/blogs?status=published&populate[image]=true&populate[creator]=true&sort=publishedAt:desc");
 }
 
-export async function getPublishedBlog(documentId) {
-  return publicRequest(`/blogs/${encodeURIComponent(documentId)}?populate[image]=true&populate[creator]=true`);
+export async function getPublishedBlog(identifier) {
+  if (!identifier) return null;
+  try {
+    const data = await publicRequest(`/blogs/${encodeURIComponent(identifier)}?status=published&populate[image]=true&populate[creator]=true`);
+    if (data?.data && data.data.publishedAt) return data;
+  } catch {
+    // Continue to slug lookup if identifier is not a documentId
+  }
+  const slugRes = await publicRequest(`/blogs?status=published&filters[slug][$eq]=${encodeURIComponent(identifier)}&populate[image]=true&populate[creator]=true`);
+  if (slugRes?.data && slugRes.data.length > 0) {
+    return { data: slugRes.data[0] };
+  }
+  return null;
 }
 
 export async function getBlog(documentId) {
@@ -143,22 +152,35 @@ export async function getBlog(documentId) {
   return getStoredToken() ? request(path) : publicRequest(path);
 }
 
-async function imageId(file) {
-  if (!file) return null;
-  const uploaded = await uploadToCloudinary(file);
-  const asset = await request("/course-assets/cloudinary", {
-    method: "POST",
-    body: JSON.stringify({ ...uploaded, name: file.name }),
-  });
-  // Strapi media relations MUST use integer media file ID
-  const mediaId = Number(asset?.id);
-  if (!mediaId || isNaN(mediaId)) {
-    throw new Error("Unable to resolve integer media ID for uploaded image asset.");
+async function imageId(file, imageUrlStr = "") {
+  if (file) {
+    const uploaded = await uploadToCloudinary(file);
+    const asset = await request("/course-assets/cloudinary", {
+      method: "POST",
+      body: JSON.stringify({ ...uploaded, name: file.name }),
+    });
+    const mediaId = Number(asset?.id);
+    if (!mediaId || isNaN(mediaId)) {
+      throw new Error("Unable to resolve integer media ID for uploaded image asset.");
+    }
+    return mediaId;
   }
-  return mediaId;
+  if (imageUrlStr && /^https?:\/\//i.test(imageUrlStr.trim())) {
+    try {
+      const asset = await request("/course-assets/cloudinary", {
+        method: "POST",
+        body: JSON.stringify({ secure_url: imageUrlStr.trim(), url: imageUrlStr.trim(), name: "external-cover" }),
+      });
+      const mediaId = Number(asset?.id);
+      if (mediaId && !isNaN(mediaId)) return mediaId;
+    } catch (e) {
+      console.warn("[blogs] Unable to register external image URL asset", e);
+    }
+  }
+  return null;
 }
 
-export async function createBlog(blog, imageFile, currentUser) {
+export async function createBlog(blog, imageFile, currentUser, imageUrlStr = "") {
   const creatorId = Number(currentUser?.id);
   if (!creatorId || isNaN(creatorId)) {
     throw new Error("Unable to identify valid logged-in Strapi user ID. Please sign in again.");
@@ -172,7 +194,7 @@ export async function createBlog(blog, imageFile, currentUser) {
     creator: creatorId,
   };
 
-  const mediaId = await imageId(imageFile);
+  const mediaId = await imageId(imageFile, imageUrlStr);
   if (mediaId != null) {
     data.image = [mediaId];
   }
@@ -187,10 +209,9 @@ export async function createBlog(blog, imageFile, currentUser) {
   });
 }
 
-export async function updateBlog(documentId, blog, existingImageId, imageFile, existingBlog = null) {
+export async function updateBlog(documentId, blog, existingImageId, imageFile, existingBlog = null, imageUrlStr = "") {
   if (!documentId) throw new Error("Blog document ID is missing for update.");
 
-  // Resolve slug
   let slug = existingBlog?.slug;
   if (!existingBlog || existingBlog.title.trim() !== blog.title.trim() || !slug) {
     slug = await getUniqueSlug(blog.title, documentId);
@@ -202,15 +223,13 @@ export async function updateBlog(documentId, blog, existingImageId, imageFile, e
     slug,
   };
 
-  // Preserve existing creator ID if available
   const existingCreatorId = Number(existingBlog?.creator?.id || existingBlog?.creator);
   if (existingCreatorId && !isNaN(existingCreatorId)) {
     data.creator = existingCreatorId;
   }
 
-  // Handle image updates safely
-  if (imageFile) {
-    const newMediaId = await imageId(imageFile);
+  if (imageFile || imageUrlStr) {
+    const newMediaId = await imageId(imageFile, imageUrlStr);
     if (newMediaId != null) data.image = [newMediaId];
   } else if (existingImageId != null) {
     const mediaId = Number(existingImageId);
@@ -228,19 +247,31 @@ export async function updateBlog(documentId, blog, existingImageId, imageFile, e
 }
 
 export async function publishBlog(documentId) {
-  // Strapi v5: set publishedAt to publish a draft document via the core REST endpoint
-  return request(`/blogs/${encodeURIComponent(documentId)}`, {
-    method: "PUT",
-    body: JSON.stringify({ data: { publishedAt: new Date().toISOString() } }),
-  });
+  try {
+    return await request(`/blogs/${encodeURIComponent(documentId)}/publish`, {
+      method: "PUT",
+    });
+  } catch (e) {
+    console.warn("[blogs] Custom publish route fallback:", e);
+    return request(`/blogs/${encodeURIComponent(documentId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ data: { publishedAt: new Date().toISOString() } }),
+    });
+  }
 }
 
 export async function unpublishBlog(documentId) {
-  // Strapi v5: set publishedAt to null to move a published document back to draft
-  return request(`/blogs/${encodeURIComponent(documentId)}`, {
-    method: "PUT",
-    body: JSON.stringify({ data: { publishedAt: null } }),
-  });
+  try {
+    return await request(`/blogs/${encodeURIComponent(documentId)}/unpublish`, {
+      method: "PUT",
+    });
+  } catch (e) {
+    console.warn("[blogs] Custom unpublish route fallback:", e);
+    return request(`/blogs/${encodeURIComponent(documentId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ data: { publishedAt: null } }),
+    });
+  }
 }
 
 export async function setBlogPublication(documentId, publish) {

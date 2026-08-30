@@ -1,68 +1,61 @@
 import Link from "next/link";
+import { getCourseImageUrl, getPublicCourses } from "@/services/strapi/courses";
 
-const STATS = [
-  { value: "50,000+", label: "Active Learners" },
-  { value: "500+", label: "Expert Courses" },
-  { value: "98%", label: "Satisfaction Rate" },
-  { value: "120+", label: "Global Instructors" },
-];
-
-const CATEGORIES = [
-  { name: "Web Development", count: "140+ Courses", icon: "💻", color: "from-blue-500/10 to-indigo-500/10 text-blue-600" },
-  { name: "AI & Data Science", count: "95+ Courses", icon: "🤖", color: "from-purple-500/10 to-pink-500/10 text-purple-600" },
-  { name: "UI/UX Design", count: "72+ Courses", icon: "🎨", color: "from-amber-500/10 to-orange-500/10 text-amber-600" },
-  { name: "Cloud & DevOps", count: "58+ Courses", icon: "☁️", color: "from-emerald-500/10 to-teal-500/10 text-emerald-600" },
-  { name: "Cybersecurity", count: "44+ Courses", icon: "🛡️", color: "from-rose-500/10 to-red-500/10 text-rose-600" },
-  { name: "Product Management", count: "38+ Courses", icon: "📊", color: "from-cyan-500/10 to-sky-500/10 text-cyan-600" },
-];
-
-const FEATURED_COURSES = [
+const WHY_CHOOSE_US = [
   {
-    id: 1,
-    title: "Full-Stack Web Architecture with Next.js & Node",
-    category: "Web Development",
-    instructor: "Sarah Jenkins",
-    rating: "4.9",
-    reviews: "1,420",
-    students: "12.4k",
-    level: "Intermediate",
-    image: "https://images.unsplash.com/photo-1587620962725-abab7fe55159?w=600&auto=format&fit=crop&q=80",
-    price: "$79.99",
+    title: "Expert Instructors",
+    description: "Learn from experienced professionals and subject matter experts who bring practical industry insight into every lesson.",
+    icon: "👨‍🏫",
   },
   {
-    id: 2,
-    title: "Practical Machine Learning & Deep Neural Networks",
-    category: "AI & Data Science",
-    instructor: "Dr. Alex Rivera",
-    rating: "4.8",
-    reviews: "980",
-    students: "8.1k",
-    level: "Advanced",
-    image: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=600&auto=format&fit=crop&q=80",
-    price: "$89.99",
+    title: "Structured Learning",
+    description: "Follow a clear curriculum designed to build foundational skills before moving into more advanced concepts and practice.",
+    icon: "🧭",
   },
   {
-    id: 3,
-    title: "Modern UI/UX Design Masterclass with Figma",
-    category: "Design",
-    instructor: "Elena Rostova",
-    rating: "4.9",
-    reviews: "2,150",
-    students: "19.3k",
-    level: "All Levels",
-    image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&auto=format&fit=crop&q=80",
-    price: "$69.99",
+    title: "Progress Tracking",
+    description: "Stay motivated with visibility into lessons completed, milestones reached, and your learning momentum over time.",
+    icon: "📈",
+  },
+  {
+    title: "Quizzes & Assessments",
+    description: "Reinforce learning with interactive quizzes and knowledge checks that help you retain and apply what you learn.",
+    icon: "✅",
   },
 ];
 
-export default function HomePage() {
+const LEARNING_FLOW = [
+  "Explore Course",
+  "Enroll",
+  "Learn Lessons",
+  "Complete Quizzes",
+  "Track Progress",
+  "Complete Course",
+];
+
+function formatPrice(value) {
+  const amount = Number(value || 0);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+  }).format(amount);
+}
+
+function getCourseInstructor(course) {
+  return course?.instructor?.username || course?.instructor?.firstName || "Instructor";
+}
+
+export default async function HomePage() {
+  const response = await getPublicCourses();
+  const courses = Array.isArray(response?.data) ? response.data : [];
+  const popularCourses = courses.slice(0, 6);
+
   return (
     <div className="flex flex-col">
-      {/* Hero Section */}
       <section className="relative overflow-hidden bg-[#050816] py-16 sm:py-24 before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_60%_35%,rgba(255,107,0,0.12),transparent_48%)] before:pointer-events-none">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            {/* Left Content */}
             <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-1.5 text-xs font-semibold text-orange-300 shadow-2xs">
                 <span className="flex h-2 w-2 rounded-full bg-orange-400 animate-pulse"></span>
@@ -100,7 +93,6 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              {/* Trust Badges */}
               <div className="pt-6 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs text-slate-500 font-medium">
                 <div className="flex items-center gap-2">
                   <svg className="h-4 w-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -123,7 +115,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right Card / Visual */}
             <div className="lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md rounded-2xl border border-orange-500/20 bg-surface-elevated bg-gradient-to-br from-orange-500/20 via-slate-900 to-slate-950 p-6 text-white shadow-xl shadow-orange-500/10">
                 <div className="space-y-4">
@@ -175,150 +166,172 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Stats Counter Section */}
-      <section className="border-y border-slate-200/80 bg-[#0B1120] py-10">
+      <section className="bg-white py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4 text-center">
-            {STATS.map((stat, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="text-3xl font-extrabold text-slate-900 sm:text-4xl">{stat.value}</div>
-                <div className="text-xs sm:text-sm font-medium text-slate-500">{stat.label}</div>
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">Popular Courses</p>
+              <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                Learn what students are choosing most
+              </h2>
+            </div>
+            <Link
+              href="/courses"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-orange-200 hover:bg-orange-50 hover:text-orange-600"
+            >
+              View All Courses
+            </Link>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {popularCourses.length > 0 ? (
+              popularCourses.map((course) => {
+                const image = getCourseImageUrl(course.thumbnail);
+                const instructor = getCourseInstructor(course);
+                const rating = course.rating ?? course.averageRating ?? course.ratings ?? null;
+
+                return (
+                  <article
+                    key={course.documentId || course.id}
+                    className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)] transition duration-300 hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_18px_35px_rgba(249,115,22,0.12)]"
+                  >
+                    <div className="relative h-52 overflow-hidden bg-slate-100">
+                      {image ? (
+                        <img src={image} alt={course.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-3xl text-slate-400">📘</div>
+                      )}
+                      <div className="absolute left-3 top-3 rounded-full border border-white/70 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-700 backdrop-blur-sm">
+                        {course.level || "Course"}
+                      </div>
+                      {course.duration != null && (
+                        <div className="absolute right-3 top-3 rounded-full bg-slate-900/80 px-2.5 py-1 text-[10px] font-medium text-slate-100 backdrop-blur-sm">
+                          {course.duration} min
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex h-full flex-col p-5">
+                      {rating != null && (
+                        <div className="mb-3 flex items-center gap-1.5 text-xs font-medium text-amber-500">
+                          <span>★</span>
+                          <span>{Number(rating).toFixed(1)}</span>
+                        </div>
+                      )}
+
+                      <h3 className="text-xl font-semibold text-slate-900 line-clamp-2">{course.title}</h3>
+                      <p className="mt-3 text-sm leading-6 text-slate-600 line-clamp-3">
+                        {course.shortDescription || "Explore this engaging learning path and deepen your practical skills."}
+                      </p>
+
+                      <div className="mt-4 space-y-2 text-sm text-slate-600">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-slate-500">Instructor</span>
+                          <span className="font-medium text-slate-800">{instructor}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-slate-500">Level</span>
+                          <span className="font-medium text-slate-800">{course.level || "All Levels"}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-slate-500">Duration</span>
+                          <span className="font-medium text-slate-800">{course.duration ? `${course.duration} min` : "Self-paced"}</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4">
+                        <div>
+                          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-slate-400">Price</p>
+                          <p className="mt-1 text-lg font-bold text-slate-900">{formatPrice(course.price)}</p>
+                        </div>
+                        <Link
+                          href={`/courses/${course.documentId || course.id}`}
+                          className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition hover:brightness-110"
+                        >
+                          View Course
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center text-sm text-slate-600 md:col-span-2 xl:col-span-3">
+                No courses are available right now. Please check back soon.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">Why Choose Us</p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Learning designed for real-world growth
+            </h2>
+          </div>
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {WHY_CHOOSE_US.map((item) => (
+              <div key={item.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-[0_18px_35px_rgba(249,115,22,0.08)]">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-2xl shadow-inner shadow-orange-100">
+                  {item.icon}
+                </div>
+                <h3 className="mt-5 text-xl font-semibold text-slate-900">{item.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Categories Grid */}
-      <section className="py-16 sm:py-20 bg-[#0B1120]">
+      <section className="bg-white py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Top Categories</h2>
-              <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-                Explore Popular Subjects
-              </p>
-            </div>
-            <Link
-              href="/explore"
-              className="mt-4 sm:mt-0 text-sm font-semibold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1"
-            >
-              Browse All Categories →
-            </Link>
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-500">How It Works</p>
+            <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+              Your learning journey, simplified
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {CATEGORIES.map((cat, idx) => (
-              <Link
-                key={idx}
-                href="/explore"
-                className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs transition-all hover:border-indigo-300 hover:shadow-md"
-              >
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${cat.color} text-2xl`}>
-                  {cat.icon}
+          <div className="mt-10 grid gap-4 lg:grid-cols-6">
+            {LEARNING_FLOW.map((step, index) => (
+              <div key={step} className="relative flex items-center gap-3 lg:block">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-amber-400 text-sm font-bold text-white shadow-lg shadow-orange-500/20">
+                  {index + 1}
                 </div>
-                <div>
-                  <h3 className="font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                    {cat.name}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{cat.count}</p>
+                <div className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center lg:flex-1">
+                  <p className="text-sm font-semibold text-slate-800">{step}</p>
                 </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Courses */}
-      <section className="py-16 sm:py-20 bg-[#050816]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10">
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Featured Courses</h2>
-              <p className="mt-1 text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
-                Start Learning from Top Rated Programs
-              </p>
-            </div>
-            <Link
-              href="/explore"
-              className="mt-4 sm:mt-0 text-sm font-semibold text-indigo-600 hover:text-indigo-700 inline-flex items-center gap-1"
-            >
-              View All Courses →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {FEATURED_COURSES.map((course) => (
-              <div
-                key={course.id}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs transition hover:shadow-lg hover:border-slate-300"
-              >
-                <div className="relative h-48 w-full bg-slate-100 overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={course.image}
-                    alt={course.title}
-                    className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                  />
-                  <div className="absolute top-3 left-3 rounded-md bg-white/90 px-2.5 py-1 text-xs font-semibold text-slate-800 backdrop-blur-xs">
-                    {course.category}
-                  </div>
-                  <div className="absolute top-3 right-3 rounded-md bg-slate-900/80 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-xs">
-                    {course.level}
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col p-5">
-                  <div className="flex items-center gap-1 text-xs text-amber-500 font-semibold mb-2">
-                    <span>★ {course.rating}</span>
-                    <span className="text-slate-400 font-normal">({course.reviews})</span>
-                    <span className="mx-1.5 text-slate-300">·</span>
-                    <span className="text-slate-500 font-normal">{course.students} students</span>
-                  </div>
-
-                  <h3 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                    {course.title}
-                  </h3>
-
-                  <p className="mt-2 text-xs text-slate-500">Instructor: <span className="font-medium text-slate-700">{course.instructor}</span></p>
-
-                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-                    <span className="text-lg font-bold text-slate-900">{course.price}</span>
-                    <Link
-                      href="/explore"
-                      className="rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-600 transition hover:bg-indigo-600 hover:text-white"
-                    >
-                      Enroll Now
-                    </Link>
-                  </div>
-                </div>
+                {index < LEARNING_FLOW.length - 1 && (
+                  <div className="hidden lg:block lg:absolute lg:-right-2 lg:top-5 lg:h-px lg:w-4 lg:bg-slate-200" />
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Call to Action Banner */}
-      <section className="bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 py-16 text-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
-            Ready to Start Your Learning Journey?
-          </h2>
-          <p className="mx-auto max-w-2xl text-indigo-100 text-sm sm:text-base">
-            Create an account today to get unlimited access to curated courses, interactive labs, and career support.
+      <section className="bg-gradient-to-r from-[#050816] via-[#0f172a] to-[#111827] py-16 text-white sm:py-20">
+        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Ready to Start Learning?</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-slate-300">
+            Join our learning platform and build the skills you need for your future.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/courses"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-transparent bg-orange-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-400 sm:w-auto"
+            >
+              Browse Courses
+            </Link>
             <Link
               href="/register"
-              className="w-full sm:w-auto rounded-xl bg-white px-6 py-3 text-sm font-semibold text-indigo-600 shadow-md transition hover:bg-indigo-50"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-slate-600 bg-slate-900/50 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-orange-300 hover:bg-slate-800 sm:w-auto"
             >
-              Sign Up for Free
-            </Link>
-            <Link
-              href="/explore"
-              className="w-full sm:w-auto rounded-xl border border-white/30 bg-transparent px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-            >
-              Explore Curriculum
+              Get Started
             </Link>
           </div>
         </div>

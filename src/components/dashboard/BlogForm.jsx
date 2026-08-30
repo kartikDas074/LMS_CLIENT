@@ -14,6 +14,7 @@ const inputClass =
 export default function BlogForm({ role = "admin", documentId }) {
   const [form, setForm] = useState(initial);
   const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [preview, setPreview] = useState("");
   const [existingBlog, setExistingBlog] = useState(null);
   const [existingImageId, setExistingImageId] = useState(null);
@@ -34,7 +35,8 @@ export default function BlogForm({ role = "admin", documentId }) {
         });
         const media = Array.isArray(blog.image) ? blog.image[0] : blog.image;
         setExistingImageId(media?.id || null);
-        setPreview(getBlogImageUrl(blog.image));
+        const resolvedUrl = getBlogImageUrl(blog.image);
+        setPreview(resolvedUrl);
       })
       .catch((loadError) => {
         console.error("[blogs] Failed to load blog for editing", loadError);
@@ -54,8 +56,22 @@ export default function BlogForm({ role = "admin", documentId }) {
     const file = event.target.files?.[0];
     if (!file) return;
     setImage(file);
+    setImageUrl("");
     setPreview(URL.createObjectURL(file));
     setError("");
+  }
+
+  function handleImageUrlChange(event) {
+    const value = event.target.value;
+    setImageUrl(value);
+    if (value.trim()) {
+      setImage(null);
+      setPreview(value.trim());
+    } else if (existingBlog) {
+      setPreview(getBlogImageUrl(existingBlog.image));
+    } else {
+      setPreview("");
+    }
   }
 
   async function submit(event) {
@@ -71,29 +87,24 @@ export default function BlogForm({ role = "admin", documentId }) {
 
     try {
       if (documentId) {
-        await updateBlog(documentId, form, existingImageId, image, existingBlog);
-        setSuccess("Blog updated successfully.");
+        await updateBlog(documentId, form, existingImageId, image, existingBlog, imageUrl);
+        setSuccess("Blog updated successfully. Note: Publication status is unchanged.");
       } else {
         const currentUser = await fetchCurrentUser();
-        console.log("[blogs] Resolved current user", {
-          user: currentUser,
-          id: currentUser?.id,
-          documentId: currentUser?.documentId,
-        });
-
         if (!currentUser?.id) {
-          throw new Error("Unable to identify current Strapi user. Please sign in again.");
+          throw new Error("Unable to identify current logged-in user. Please sign in again.");
         }
 
-        await createBlog(form, image, currentUser);
+        await createBlog(form, image, currentUser, imageUrl);
         setForm(initial);
         setImage(null);
+        setImageUrl("");
         setPreview("");
-        setSuccess("Blog saved as a draft successfully.");
+        setSuccess("Blog post created as DRAFT. Publish it from the dashboard when ready.");
       }
     } catch (saveError) {
       console.error("[blogs] Save failed", saveError);
-      setError(saveError.message || `Failed to ${documentId ? "update" : "create"} blog.`);
+      setError(saveError.message || `Failed to ${documentId ? "update" : "create"} blog post.`);
     } finally {
       setSaving(false);
     }
@@ -108,15 +119,41 @@ export default function BlogForm({ role = "admin", documentId }) {
     );
   }
 
+  const isPublished = Boolean(existingBlog?.publishedAt);
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-7">
       <PageHeader
         eyebrow="Editorial studio"
-        title={documentId ? "Edit Blog" : "Add Blog"}
-        description="Create thoughtful learning content with a structured publishing workflow."
+        title={documentId ? "Edit Blog Post" : "Create Blog Post"}
+        description="Write and configure your LMS blog post. New posts are saved as Draft by default."
       />
       <Card className="p-5 sm:p-8">
         <form onSubmit={submit} className="space-y-6">
+          {/* Status Indicator Banner */}
+          <div className={`rounded-2xl border p-4 ${isPublished ? "border-emerald-500/20 bg-emerald-500/5" : "border-amber-500/20 bg-amber-500/5"}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Current Status</p>
+                <p className="mt-1 text-sm font-medium text-slate-200">
+                  {documentId ? (isPublished ? "Published (Live on website)" : "Draft (Private)") : "Draft by default"}
+                </p>
+              </div>
+              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${
+                isPublished
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-amber-500/30 bg-amber-500/10 text-amber-200"
+              }`}>
+                {isPublished ? "Published" : "Draft"}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-slate-400">
+              {documentId
+                ? "Saving changes updates content without changing publication status. Use the Publish / Unpublish button on the dashboard to change visibility."
+                : "Creating a blog post saves it as Draft. It will NOT appear on the public website until explicitly published from the dashboard."}
+            </p>
+          </div>
+
           <div>
             <label className="text-xs font-semibold text-slate-300">Title *</label>
             <input
@@ -124,47 +161,60 @@ export default function BlogForm({ role = "admin", documentId }) {
               value={form.title}
               onChange={change}
               className={inputClass}
-              placeholder="Learning React in 2026"
+              placeholder="e.g. Learning React in 2026"
+              required
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300">Description / Body *</label>
-            <p className="mt-1 text-xs text-slate-500">Each paragraph is saved as a Strapi Blocks paragraph.</p>
+            <label className="text-xs font-semibold text-slate-300">Body / Content *</label>
+            <p className="mt-1 text-xs text-slate-500">Paragraphs are formatted automatically for article presentation.</p>
             <textarea
               name="body"
               value={form.body}
               onChange={change}
-              rows={14}
+              rows={12}
               className={`${inputClass} resize-y`}
-              placeholder="Write the article body. Use a new line for each paragraph."
+              placeholder="Write article content here. Use line breaks to separate paragraphs."
+              required
             />
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-300">Cover Image</label>
-            <div className="mt-2 grid gap-4 sm:grid-cols-[180px_1fr]">
+            <div className="mt-2 grid gap-4 sm:grid-cols-[200px_1fr]">
               {preview ? (
-                <img src={preview} alt="Blog cover preview" className="aspect-video w-full rounded-xl border border-slate-800 object-cover" />
+                <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+                  <img src={preview} alt="Cover preview" className="h-full w-full object-cover" />
+                </div>
               ) : (
-                <div className="flex aspect-video items-center justify-center rounded-xl border border-dashed border-slate-700 text-orange-400">
-                  <Icon name="edit" />
+                <div className="flex aspect-video items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-950 text-slate-600">
+                  <Icon name="edit" size={24} />
                 </div>
               )}
+
               <div className="flex flex-col justify-center gap-3">
-                <input id="blog-image" type="file" accept="image/*" onChange={chooseImage} className="sr-only" />
-                <label
-                  htmlFor="blog-image"
-                  className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-xl border border-slate-700 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:border-orange-500/50 hover:text-orange-300"
-                >
-                  <Icon name="plus" size={15} />
-                  {documentId ? "Replace image" : "Choose image"}
-                </label>
-                <p className="text-xs text-slate-500">
-                  {documentId
-                    ? "The current image remains unless you replace it."
-                    : "Optional image uploaded through the existing Cloudinary setup."}
-                </p>
+                <input id="blog-image-file" type="file" accept="image/*" onChange={chooseImage} className="sr-only" />
+                <div className="flex flex-wrap items-center gap-3">
+                  <label
+                    htmlFor="blog-image-file"
+                    className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:border-orange-500/50 hover:text-orange-300"
+                  >
+                    <Icon name="plus" size={15} />
+                    {documentId ? "Upload Replacement Image" : "Choose File"}
+                  </label>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Or Provide Image URL</span>
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={handleImageUrlChange}
+                    placeholder="https://images.unsplash.com/photo-..."
+                    className={inputClass}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -183,7 +233,7 @@ export default function BlogForm({ role = "admin", documentId }) {
 
           <div className="flex flex-col-reverse gap-3 border-t border-slate-800 pt-5 sm:flex-row sm:justify-between">
             <Link
-              href={documentId ? `/blogs/${documentId}` : `/dashboard/${role}/blogs`}
+              href={`/dashboard/${role}/blogs`}
               className="inline-flex justify-center rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 hover:border-orange-500/50 hover:text-orange-300"
             >
               Cancel
@@ -191,7 +241,7 @@ export default function BlogForm({ role = "admin", documentId }) {
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-orange-500/20 hover:brightness-110 disabled:opacity-50"
             >
               {saving ? "Saving..." : documentId ? "Save Changes" : "Save Draft"}
               <Icon name="arrow" size={15} />
@@ -202,3 +252,4 @@ export default function BlogForm({ role = "admin", documentId }) {
     </div>
   );
 }
+
