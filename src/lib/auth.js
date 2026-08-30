@@ -1,13 +1,5 @@
-/**
- * Strapi Authentication Helper Utility
- * Connects Next.js client with Strapi Users & Permissions API (http://localhost:1337)
- */
-
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_STRAPI_API_URL ||
-  "http://localhost:1337/api"
-).replace(/\/$/, "");
+/** Strapi Authentication Helper Utility. */
+import { API_BASE_URL } from "@/config/api";
 const TOKEN_KEY = "strapi_jwt";
 
 function logAuth(event, details = {}) {

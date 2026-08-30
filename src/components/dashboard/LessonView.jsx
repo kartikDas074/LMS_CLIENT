@@ -6,6 +6,7 @@ import { Card, EmptyState, PageHeader } from "@/components/ui/DashboardUI";
 import { getLesson } from "@/services/strapi/lessons";
 import { fetchCurrentUser, getStoredToken } from "@/lib/auth";
 import Icon from "@/components/dashboard/Icon";
+import { API_BASE_URL } from "@/config/api";
 
 const formatVideoUrl = (videourl) => {
   if (!videourl) return null;
@@ -14,8 +15,7 @@ const formatVideoUrl = (videourl) => {
   if (typeof video === "string") return video;
   if (video.url) {
     if (/^https?:\/\//i.test(video.url)) return video.url;
-    const base = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_STRAPI_API_URL || "http://localhost:1337/api";
-    const apiBase = base.replace(/\/api\/?$/, "");
+    const apiBase = API_BASE_URL.replace(/\/api\/?$/, "");
     return `${apiBase}${video.url.startsWith("/") ? "" : "/"}${video.url}`;
   }
   return null;

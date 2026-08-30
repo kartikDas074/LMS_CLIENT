@@ -10,6 +10,7 @@ import { checkUserEnrollment } from "@/services/strapi/enrolls";
 import { getLessonProgresses, markLessonComplete } from "@/services/strapi/lessonProgress";
 import { getQuizProgresses, submitQuizProgress } from "@/services/strapi/quizProgress";
 import { getGrade, getQuizResultSummary } from "@/lib/grading";
+import { API_BASE_URL } from "@/config/api";
 
 function LessonVideoPlayer({ lesson }) {
   const rawVideo = lesson?.videourl;
@@ -24,11 +25,7 @@ function LessonVideoPlayer({ lesson }) {
   }
 
   if (videoUrl && !/^https?:\/\//i.test(videoUrl)) {
-    const base = (
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      process.env.NEXT_PUBLIC_STRAPI_API_URL ||
-      "http://localhost:1337"
-    ).replace(/\/api\/?$/, "");
+    const base = API_BASE_URL.replace(/\/api\/?$/, "");
     videoUrl = `${base}${videoUrl.startsWith("/") ? "" : "/"}${videoUrl}`;
   }
 

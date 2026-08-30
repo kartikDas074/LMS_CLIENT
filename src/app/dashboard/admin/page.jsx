@@ -1,2 +1,2 @@
-import OverviewDashboard from "@/components/dashboard/OverviewDashboard";
-export default function AdminDashboardPage() { return <OverviewDashboard role="admin" />; }
+import StaffOverviewDashboard from "@/components/dashboard/StaffOverviewDashboard";
+export default function AdminDashboardPage() { return <StaffOverviewDashboard role="admin" />; }

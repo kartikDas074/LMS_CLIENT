@@ -1,10 +1,5 @@
 import { getStoredToken } from "@/lib/auth";
-
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_STRAPI_API_URL ||
-  "http://localhost:1337/api"
-).replace(/\/$/, "");
+import { API_BASE_URL } from "@/config/api";
 
 export const APPLICATION_ROLES = [
   { label: "Admin Panel", types: ["admin-pannel", "admin-panel", "admin"] },

@@ -1,11 +1,6 @@
 import { getStoredToken, refreshAccessToken } from "@/lib/auth";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_STRAPI_API_URL ||
-  "http://localhost:1337/api"
-).replace(/\/$/, "");
+import { API_BASE_URL } from "@/config/api";
 
 const COURSE_LEVELS = ["Beginner", "Intermediate", "Advanced"];
 
