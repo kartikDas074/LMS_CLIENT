@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# LMS Frontend Client
 
-## Getting Started
+This is the Next.js frontend for the Learning Management System (LMS) web application.
 
-First, run the development server:
+---
+
+## 🛠️ Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **UI Library:** React 19, TailwindCSS v4
+- **Media Uploads:** Cloudinary direct client-side unsigned upload
+- **API Integration:** Fetch integration with Strapi v5 REST API
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install Dependencies
+
+From the `client` directory:
+
+```bash
+npm install
+```
+
+### 2. Environment Variables
+
+Create a `.env.local` file in the `client` root directory:
+
+```env
+# Strapi Backend API Base URL (must include /api)
+NEXT_PUBLIC_BACKEND_URL=http://localhost:1337/api
+
+# Cloudinary Unsigned Upload Configuration
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_unsigned_upload_preset
+```
+
+> **Note:** Never commit `.env.local` to version control. Refer to `.env.example` for details.
+
+### 3. Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to view the application.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📜 Available Scripts
 
-## Learn More
+- `npm run dev`: Run the local development server at `http://localhost:3000`
+- `npm run build`: Build the production application
+- `npm run start`: Start the production server
+- `npm run lint`: Run ESLint checks
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📁 Folder Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+client/
+├── src/
+│   ├── app/           # App Router pages (courses, blogs, dashboard, auth)
+│   ├── components/    # Reusable UI components (Public, Dashboard, Layout)
+│   ├── config/        # API configuration (API_BASE_URL resolution)
+│   ├── context/       # React Context (Auth context, etc.)
+│   ├── lib/           # Utility functions & Cloudinary direct upload handler
+│   └── services/      # Strapi API services (courses, blogs, auth)
+├── public/            # Static assets
+└── README.md
+```
