@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use, useRef, useCallback } from "react";
+import { useEffect, useState, use, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -9,6 +9,7 @@ import { getQuizzes, normalizeQuiz } from "@/services/strapi/quizzes";
 import { checkUserEnrollment } from "@/services/strapi/enrolls";
 import { getLessonProgresses, markLessonComplete } from "@/services/strapi/lessonProgress";
 import { getQuizProgresses, submitQuizProgress } from "@/services/strapi/quizProgress";
+import { getGrade, getQuizResultSummary } from "@/lib/grading";
 
 function LessonVideoPlayer({ lesson }) {
   const rawVideo = lesson?.videourl;
@@ -81,7 +82,7 @@ function LessonVideoPlayer({ lesson }) {
 
 function QuizRunner({ quiz, onFinish, onCancel }) {
   const normalized = normalizeQuiz(quiz);
-  const questions = normalized.questions || [];
+  const questions = useMemo(() => normalized.questions || [], [normalized.questions]);
 
   const [answers, setAnswers] = useState({});
   const [timeLeftSeconds, setTimeLeftSeconds] = useState(
@@ -263,16 +264,18 @@ function QuizChart({ quizzes, progressMap }) {
           const qDocId = quiz.documentId || quiz.id;
           const prog = progressMap[qDocId];
           const attempted = Boolean(prog);
-          const percentage = attempted ? Number(prog.percentage || 0) : 0;
+          const summary = attempted ? getQuizResultSummary(prog) : { result: 0, totalMarks: 0, percentage: 0, grade: "F" };
+          const percentage = summary.percentage;
+          const grade = summary.grade;
 
           return (
             <div key={qDocId} className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-medium text-slate-200 truncate max-w-[200px] sm:max-w-md">
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="font-medium text-slate-200 truncate max-w-[180px] sm:max-w-md">
                   {quiz.title}
                 </span>
-                <span className={`font-semibold ${attempted ? (percentage >= 70 ? "text-emerald-400" : "text-amber-400") : "text-slate-500"}`}>
-                  {attempted ? `${percentage}% (${prog.result}/${prog.totalMarks})` : "0% (Not Attempted)"}
+                <span className={`font-semibold text-right ${attempted ? (percentage >= 70 ? "text-emerald-400" : "text-amber-400") : "text-slate-500"}`}>
+                  {attempted ? `${percentage}% • ${grade} • ${summary.result}/${summary.totalMarks}` : "0% • Not Attempted"}
                 </span>
               </div>
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-950">
@@ -460,15 +463,7 @@ export default function CourseLearningPage({ params }) {
       }));
     } catch (err) {
       console.error("[learning] Submit quiz error:", err);
-      // Fallback local update if backend returned 400 because duplicate or recorded
-      setQuizProgressMap((prev) => ({
-        ...prev,
-        [qDocId]: {
-          result: resultPayload.result,
-          totalMarks: resultPayload.totalMarks,
-          percentage: resultPayload.percentage,
-        },
-      }));
+      // Do not claim a quiz was recorded unless the backend confirms it.
     } finally {
       setActiveQuiz(null);
     }
@@ -802,6 +797,8 @@ export default function CourseLearningPage({ params }) {
                     const progress = quizProgressMap[qDocId];
                     const isAttempted = Boolean(progress);
                     const isActive = (activeQuiz?.documentId || activeQuiz?.id) === qDocId;
+                    const summary = isAttempted ? getQuizResultSummary(progress) : null;
+                    const grade = summary?.grade || getGrade(0);
 
                     return (
                       <div
@@ -832,11 +829,19 @@ export default function CourseLearningPage({ params }) {
                         </div>
 
                         {isAttempted ? (
-                          <div className="rounded-lg border border-slate-800 bg-slate-950 p-2 text-xs flex items-center justify-between">
-                            <span className="text-[11px] text-slate-400">Your Result:</span>
-                            <span className="font-bold text-emerald-400">
-                              {progress.result} / {progress.totalMarks} ({progress.percentage}%)
-                            </span>
+                          <div className="rounded-lg border border-slate-800 bg-slate-950 p-2 text-[11px] text-slate-300 space-y-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-400">Score</span>
+                              <span className="font-bold text-emerald-400">{summary.result} / {summary.totalMarks}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-400">Percentage</span>
+                              <span className="font-bold text-slate-200">{summary.percentage}%</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-slate-400">Grade</span>
+                              <span className="font-bold text-orange-300">{grade}</span>
+                            </div>
                           </div>
                         ) : (
                           <button
